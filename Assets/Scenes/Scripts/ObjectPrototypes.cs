@@ -7,6 +7,9 @@ public class ObjectPrototypes : MonoBehaviour
 {
     public Transform CtlPtPrototype;
     public LineRenderer CtlMeshPolylinePrototype;
+    public PlaneLayer LayerPrototype;
+    public BezierCurveGeom BezierPrototype;
+    public CircularArcGeom CircularArcPrototype;
     public Trihedron MoveTrihedton;
     //public Trihedron RotateTrihedton;
     public HelpPanel HelpTextPanel;
@@ -32,6 +35,21 @@ public class ObjectPrototypes : MonoBehaviour
         res.widthCurve = CtlMeshPolylinePrototype.widthCurve;
         res.alignment = LineAlignment.View;
         return res;
+    }
+
+    public BezierCurveGeom CreateBezierCurve()
+    {
+        return Instantiate(BezierPrototype);
+    }
+
+    public CircularArcGeom CreateCircularArc()
+    {
+        return Instantiate(CircularArcPrototype);
+    }
+
+    public PlaneLayer CreateLayer(float elevation)
+    {
+        return Instantiate(LayerPrototype, new Vector3(0f, elevation, 0f), Quaternion.identity);
     }
 
     public Trihedron GetMoveTridehron()

@@ -19,6 +19,21 @@ public static class GeomObjectFactory
         return _prototypes.AddLineRendererToObject(obj);
     }
 
+    public static BezierCurveGeom CreateBezierCurve()
+    {
+        return _prototypes.CreateBezierCurve();
+    }
+
+    public static CircularArcGeom CreateCircularArc()
+    {
+        return _prototypes.CreateCircularArc();
+    }
+
+    public static PlaneLayer CreateLayer(float elevation)
+    {
+        return _prototypes.CreateLayer(elevation);
+    }
+
     public static Trihedron GetMoveTridehron(Vector3 pos)
     {
         Trihedron triheron = _prototypes.GetMoveTridehron();

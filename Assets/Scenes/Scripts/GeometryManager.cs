@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
+using UnityEngine.EventSystems;
 
 public class GeometryManager : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
     {
-        _layersLayerMask = LayerMask.GetMask("PlaneLayers");
         _activeLayer = GeomObjectFactory.CreateLayer(0f);
         _layers.Add(_activeLayer);
     }
@@ -18,10 +18,15 @@ public class GeometryManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             if (_currTmpBzrCurve != null && _currCrvPtsLeft > 0)
             {
                 Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
-                RaycastHit[] hits = Physics.RaycastAll(r, 1000f, _layersLayerMask);
+                RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask);
                 if (hits != null)
                 {
                     foreach (RaycastHit hit in hits)
@@ -50,6 +55,46 @@ public class GeometryManager : MonoBehaviour
                             break;
                         }
                     }
+                }
+            }
+            else
+            {
+                Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hit;
+                if (Physics.Raycast(r, out hit, 1000f, GlobalData.CurvesLayerMask | GlobalData.ControlPtsLayerMask))
+                {
+                    CurveGeomBase hitCrv = hit.transform.parent.GetComponent<CurveGeomBase>();
+                    if (hitCrv == _currSelectedCurve)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        if (_currSelectedCurve != null)
+                        {
+                            _currSelectedCurve.Selected = false;
+                        }
+                        _currSelectedCurve = hitCrv;
+                        _currSelectedCurve.Selected = true;
+                    }
+                    if (_currSelectedCurve == null)
+                    {
+                        return;
+                    }
+                    Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(hit.point);
+                    CurveActions actionsPanel = GeomObjectFactory.GetCurveActionPanel();
+                    RectTransform rt = actionsPanel.GetComponent<RectTransform>();
+                    rt.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
+                    actionsPanel.AssignCurve(_currSelectedCurve);
+                }
+                else
+                {
+                    GeomObjectFactory.GetCurveActionPanel().Release();
+                    if (_currSelectedCurve != null)
+                    {
+                        _currSelectedCurve.Selected = false;
+                    }
+                    _currSelectedCurve = null;
                 }
             }
         }
@@ -93,6 +138,7 @@ public class GeometryManager : MonoBehaviour
 
     private BezierCurveGeom _currTmpBzrCurve = null;
     private CircularArcGeom _currTmpCircArc = null;
+    private CurveGeomBase _currSelectedCurve = null;
     private int _currCrvPtsLeft = 0;
     private string _currCreatingObject = "";
 
@@ -104,5 +150,4 @@ public class GeometryManager : MonoBehaviour
     private Vector3 _dragOrigin;
     private float _dragTime = 0f;
     private static readonly float _dragDelay = 0.5f;
-    private static int _layersLayerMask;
 }

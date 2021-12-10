@@ -10,10 +10,14 @@ public class ObjectPrototypes : MonoBehaviour
     public PlaneLayer LayerPrototype;
     public BezierCurveGeom BezierPrototype;
     public CircularArcGeom CircularArcPrototype;
+    public CapsuleCollider CurveSegColliderPrototype;
     public Trihedron MoveTrihedton;
     //public Trihedron RotateTrihedton;
+    public CurveActions CurveActionPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
+    public Material DefaultCurveMtl;
+    public Material SelectedCurveMtl;
 
     public Transform CreateCtlPt(Vector3 pos)
     {
@@ -52,6 +56,11 @@ public class ObjectPrototypes : MonoBehaviour
         return Instantiate(LayerPrototype, new Vector3(0f, elevation, 0f), Quaternion.identity);
     }
 
+    public CapsuleCollider CreateCurveSegCollider()
+    {
+        return Instantiate(CurveSegColliderPrototype);
+    }
+
     public Trihedron GetMoveTridehron()
     {
         return MoveTrihedton;
@@ -62,6 +71,11 @@ public class ObjectPrototypes : MonoBehaviour
     //    return RotateTrihedton;
     //}
 
+    public CurveActions GetCurveActionPanel()
+    {
+        return CurveActionPanel;
+    }
+
     public HelpPanel GetHelpPanel()
     {
         return HelpTextPanel;
@@ -71,4 +85,15 @@ public class ObjectPrototypes : MonoBehaviour
     {
         return CamControl;
     }
+
+    public Material GetDefaultCurveMtl()
+    {
+        return DefaultCurveMtl;
+    }
+
+    public Material GetSelectedCurveMtl()
+    {
+        return SelectedCurveMtl;
+    }
+
 }

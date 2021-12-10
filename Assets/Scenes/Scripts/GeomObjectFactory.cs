@@ -29,6 +29,14 @@ public static class GeomObjectFactory
         return _prototypes.CreateCircularArc();
     }
 
+    public static CapsuleCollider CreateCurveSegCollider(float radius, CurveGeomBase container)
+    {
+        CapsuleCollider coll = _prototypes.CreateCurveSegCollider();
+        coll.radius = radius;
+        coll.transform.SetParent(container.transform);
+        return coll;
+    }
+
     public static PlaneLayer CreateLayer(float elevation)
     {
         return _prototypes.CreateLayer(elevation);
@@ -55,9 +63,24 @@ public static class GeomObjectFactory
         return _prototypes.GetHelpPanel();
     }
 
+    public static CurveActions GetCurveActionPanel()
+    {
+        return _prototypes.GetCurveActionPanel();
+    }
+
     public static CameraControl GetCameraControl()
     {
         return _prototypes.GetCameraControl();
+    }
+
+    public static Material GetDefaultCurveMtl()
+    {
+        return _prototypes.GetDefaultCurveMtl();
+    }
+
+    public static Material GetSelectedCurveMtl()
+    {
+        return _prototypes.GetSelectedCurveMtl();
     }
 
     private static readonly ObjectPrototypes _prototypes = GameObject.FindObjectOfType<ObjectPrototypes>();

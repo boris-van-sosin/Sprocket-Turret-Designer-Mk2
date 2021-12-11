@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class ObjectPrototypes : MonoBehaviour
 {
+    public GeometryManager GeomManager;
     public Transform CtlPtPrototype;
     public LineRenderer CtlMeshPolylinePrototype;
     public PlaneLayer LayerPrototype;
@@ -14,10 +15,16 @@ public class ObjectPrototypes : MonoBehaviour
     public Trihedron MoveTrihedton;
     //public Trihedron RotateTrihedton;
     public CurveActions CurveActionPanel;
+    public CtlPtEditPanel ControlPointEditPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
     public Material DefaultCurveMtl;
     public Material SelectedCurveMtl;
+
+    public GeometryManager GetGeometryManager()
+    {
+        return GeomManager;
+    }
 
     public Transform CreateCtlPt(Vector3 pos)
     {
@@ -74,6 +81,11 @@ public class ObjectPrototypes : MonoBehaviour
     public CurveActions GetCurveActionPanel()
     {
         return CurveActionPanel;
+    }
+
+    public CtlPtEditPanel GetCtlPtEditPanel()
+    {
+        return ControlPointEditPanel;
     }
 
     public HelpPanel GetHelpPanel()

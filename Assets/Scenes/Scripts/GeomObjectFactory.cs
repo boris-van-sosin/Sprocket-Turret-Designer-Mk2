@@ -4,6 +4,11 @@ using UnityEngine;
 
 public static class GeomObjectFactory
 {
+    public static GeometryManager GetGeometryManager()
+    {
+        return _prototypes.GetGeometryManager();
+    }
+
     public static Transform CreateCtlPt(Vector3 pos)
     {
         return _prototypes.CreateCtlPt(pos);
@@ -66,6 +71,11 @@ public static class GeomObjectFactory
     public static CurveActions GetCurveActionPanel()
     {
         return _prototypes.GetCurveActionPanel();
+    }
+
+    public static CtlPtEditPanel GetCtlPtEditPanel()
+    {
+        return _prototypes.GetCtlPtEditPanel();
     }
 
     public static CameraControl GetCameraControl()

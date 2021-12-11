@@ -16,5 +16,25 @@ public class CurveActions : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    public void OnMoveAction()
+    {
+
+    }
+
+    public void OnRotateAction()
+    {
+
+    }
+
+    public void OnEditAction()
+    {
+        GeomObjectFactory.GetGeometryManager().StartEditCurve(_currCrv);
+    }
+
+    public void OnDeleteAction()
+    {
+
+    }
+
     private CurveGeomBase _currCrv = null;
 }

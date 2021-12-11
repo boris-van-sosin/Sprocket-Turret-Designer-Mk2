@@ -31,6 +31,7 @@ public abstract class CurveGeomBase : MonoBehaviour
     public virtual void AppendCtlPt(ControlPoint pt)
     {
         _cltPtsTransforms.Add(pt.transform);
+        pt.ContainingCurve = this;
     }
 
     public void TryRender()

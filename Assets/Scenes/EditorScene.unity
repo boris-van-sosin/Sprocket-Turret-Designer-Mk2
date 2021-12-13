@@ -836,8 +836,10 @@ MonoBehaviour:
   ControlPointEditPanel: {fileID: 727217575}
   HelpTextPanel: {fileID: 261123509}
   CamControl: {fileID: 1003484785}
-  DefaultCurveMtl: {fileID: 2100000, guid: 1342d4440f6e6bd4db7bb978cb9ff396, type: 2}
-  SelectedCurveMtl: {fileID: 2100000, guid: fa7596b7513ad2d479d98dea833314c1, type: 2}
+  CurveMtlDefault: {fileID: 2100000, guid: 1342d4440f6e6bd4db7bb978cb9ff396, type: 2}
+  CurveMtlSelected: {fileID: 2100000, guid: fa7596b7513ad2d479d98dea833314c1, type: 2}
+  CtlPtMtlDefault: {fileID: 2100000, guid: 6492f3bd1eee8404d82f7447b4c13f0c, type: 2}
+  CtlPtMtlEditing: {fileID: 2100000, guid: ec356f7c9f866724dab1d4df372f7da8, type: 2}
 --- !u!4 &563426397
 Transform:
   m_ObjectHideFlags: 0

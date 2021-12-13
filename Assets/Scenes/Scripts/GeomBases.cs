@@ -79,18 +79,21 @@ public abstract class CurveGeomBase : MonoBehaviour
             _selected = value;
             if (_selected)
             {
-                _curveLR.sharedMaterial = GeomObjectFactory.GetSelectedCurveMtl();
+                _curveLR.sharedMaterial = GeomObjectFactory.GetCurveMtlSelected();
                 _curveLR.startColor = _curveLR.endColor = GlobalData.SelectedCrvColor;
             }
             else
             {
-                _curveLR.sharedMaterial = GeomObjectFactory.GetDefaultCurveMtl();
+                _curveLR.sharedMaterial = GeomObjectFactory.GetCurveMtlDefault();
                 _curveLR.startColor = _curveLR.endColor = GlobalData.DefaultCrvColor;
             }
         }
     }
 
     public abstract bool CanRender();
+    public Vector3 Eval(float t) => InnerCurve.Eval(t);
+    public Vector3 EvalStart() => InnerCurve.Eval(Domain.Item1);
+    public Vector3 EvalEnd() => InnerCurve.Eval(Domain.Item2);
     protected virtual (float, float) Domain => InnerCurve.Domain;
     protected abstract ICurve<Vector3> InnerCurve { get; }
     protected static Vector3 Blend(Vector3 P1, float a, Vector3 P2, float b) => (P1 * a) + (P2 * b);

@@ -33,7 +33,7 @@ public class CurveActions : MonoBehaviour
 
     public void OnDeleteAction()
     {
-
+        GeomObjectFactory.GetGeometryManager().DeleteCurve(_currCrv);
     }
 
     private CurveGeomBase _currCrv = null;

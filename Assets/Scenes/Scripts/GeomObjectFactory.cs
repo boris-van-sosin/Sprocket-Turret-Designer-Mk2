@@ -83,14 +83,24 @@ public static class GeomObjectFactory
         return _prototypes.GetCameraControl();
     }
 
-    public static Material GetDefaultCurveMtl()
+    public static Material GetCurveMtlDefault()
     {
-        return _prototypes.GetDefaultCurveMtl();
+        return _prototypes.GetCurveMtlDefault();
     }
 
-    public static Material GetSelectedCurveMtl()
+    public static Material GetCurveMtlSelected()
     {
-        return _prototypes.GetSelectedCurveMtl();
+        return _prototypes.GetCurveMtlSelected();
+    }
+
+    public static Material GetCtlPtMtlDefault()
+    {
+        return _prototypes.GetCtlPtMtlDefault();
+    }
+
+    public static Material GetCtlPtMtlEditing()
+    {
+        return _prototypes.GetCtlPtMtlEditing();
     }
 
     private static readonly ObjectPrototypes _prototypes = GameObject.FindObjectOfType<ObjectPrototypes>();

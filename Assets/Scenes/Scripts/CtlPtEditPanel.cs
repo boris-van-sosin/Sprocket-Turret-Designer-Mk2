@@ -34,8 +34,8 @@ public class CtlPtEditPanel : MonoBehaviour
         _crv.UpdateControlPoint(_ctlPt);
         _crv.TryRender();
         Vector3 relativePos = _ctlPt.transform.position - _crv.CtlPts[0].position;
-        RelativeXInput.text = relativePos.x.ToString();
-        RelativeZInput.text = relativePos.z.ToString();
+        RelativeXInput.SetTextWithoutNotify(relativePos.x.ToString());
+        RelativeZInput.SetTextWithoutNotify(relativePos.z.ToString());
     }
 
     private void RelativeValueChanged(string val)
@@ -45,17 +45,17 @@ public class CtlPtEditPanel : MonoBehaviour
         _ctlPt.transform.position = absolutePos;
         _crv.UpdateControlPoint(_ctlPt);
         _crv.TryRender();
-        AbsXInput.text = absolutePos.x.ToString();
-        AbsZInput.text = absolutePos.z.ToString();
+        AbsXInput.SetTextWithoutNotify(absolutePos.x.ToString());
+        AbsZInput.SetTextWithoutNotify(absolutePos.z.ToString());
     }
 
     public void UpdateValuesFromCtlPt()
     {
-        AbsXInput.text = _ctlPt.transform.position.x.ToString();
-        AbsZInput.text = _ctlPt.transform.position.z.ToString();
+        AbsXInput.SetTextWithoutNotify(_ctlPt.transform.position.x.ToString());
+        AbsZInput.SetTextWithoutNotify(_ctlPt.transform.position.z.ToString());
         Vector3 relativePos = _ctlPt.transform.position - _crv.CtlPts[0].position;
-        RelativeXInput.text = relativePos.x.ToString();
-        RelativeZInput.text = relativePos.z.ToString();
+        RelativeXInput.SetTextWithoutNotify(relativePos.x.ToString());
+        RelativeZInput.SetTextWithoutNotify(relativePos.z.ToString());
     }
 
     public TMPro.TMP_InputField AbsXInput;

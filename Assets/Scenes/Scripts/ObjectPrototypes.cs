@@ -18,8 +18,10 @@ public class ObjectPrototypes : MonoBehaviour
     public CtlPtEditPanel ControlPointEditPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
-    public Material DefaultCurveMtl;
-    public Material SelectedCurveMtl;
+    public Material CurveMtlDefault;
+    public Material CurveMtlSelected;
+    public Material CtlPtMtlDefault;
+    public Material CtlPtMtlEditing;
 
     public GeometryManager GetGeometryManager()
     {
@@ -98,14 +100,23 @@ public class ObjectPrototypes : MonoBehaviour
         return CamControl;
     }
 
-    public Material GetDefaultCurveMtl()
+    public Material GetCurveMtlDefault()
     {
-        return DefaultCurveMtl;
+        return CurveMtlDefault;
     }
 
-    public Material GetSelectedCurveMtl()
+    public Material GetCurveMtlSelected()
     {
-        return SelectedCurveMtl;
+        return CurveMtlSelected;
     }
 
+    public Material GetCtlPtMtlDefault()
+    {
+        return CtlPtMtlDefault;
+    }
+
+    public Material GetCtlPtMtlEditing()
+    {
+        return CtlPtMtlEditing;
+    }
 }

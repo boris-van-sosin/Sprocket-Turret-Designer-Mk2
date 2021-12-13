@@ -41,10 +41,27 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleDefaultClick();
             }
+            else if (_currState == UserActionState.SelectedCurve)
+            {
+                HandleDefaultClick(); //TODO: verify this
+                _activeLayer.CheckConnectivity(); //TODO: right now this is only for verification.
+            }
             else if (_currState == UserActionState.EditCurve)
             {
                 HandleEditStep();
+                _dragStartTime = Time.time;
             }
+        }
+        else if (Input.GetMouseButton(0))
+        {
+            if (_currState == UserActionState.EditCurve)
+            {
+                HandleDrag();
+            }
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            _dragStartTime = Time.time;
         }
     }
 
@@ -53,36 +70,55 @@ public class GeometryManager : MonoBehaviour
         if (_currTmpBzrCurve != null && _currCrvPtsLeft > 0)
         {
             Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask);
+            RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
             if (hits != null)
             {
+                RaycastHit? bestHit = null;
+                ControlPoint snapCtlPt = null;
+                LayerAxis snapAxis = null;
                 foreach (RaycastHit hit in hits)
                 {
-                    if (hit.collider.gameObject == _activeLayer.gameObject)
+                    ControlPoint hitCtlpt;
+                    LayerAxis hitAxis;
+                    if (snapCtlPt == null && hit.collider.gameObject == _activeLayer.gameObject)
                     {
-
-                        Transform ctlPt = GeomObjectFactory.CreateCtlPt(hit.point);
-                        ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
-                        ctlPt.SetParent(_currTmpBzrCurve.transform);
-                        _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
-                        --_currCrvPtsLeft;
-
-                        if (_currCrvPtsLeft == 0)
-                        {
-                            _currTmpBzrCurve.TryRender();
-                            _activeLayer.AddCurve(_currTmpBzrCurve);
-                            _currTmpBzrCurve = null;
-                            GeomObjectFactory.GetHelpPanel().SetText();
-                            _currState = UserActionState.Default;
-                        }
-                        else
-                        {
-                            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
-                        }
-
-                        break;
+                        bestHit = hit;
+                    }
+                    else if ((hitCtlpt = hit.collider.GetComponent<ControlPoint>()) != null && _activeLayer.ContainsCtlPt(hitCtlpt))
+                    {
+                        snapCtlPt = hitCtlpt;
+                        bestHit = hit;
+                    }
+                    else if (snapCtlPt == null && (hitAxis = hit.collider.GetComponent<LayerAxis>()) && hitAxis.ContainingLayer == _activeLayer)
+                    {
+                        snapAxis = hitAxis;
+                        bestHit = hit;
                     }
                 }
+
+                if (bestHit.HasValue)
+                {
+                    Vector3 placePt = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+                    Transform ctlPt = GeomObjectFactory.CreateCtlPt(snapCtlPt != null ? snapCtlPt.transform.position : bestHit.Value.point);
+                    ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
+                    ctlPt.SetParent(_currTmpBzrCurve.transform);
+                    _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
+                    --_currCrvPtsLeft;
+
+                    if (_currCrvPtsLeft == 0)
+                    {
+                        _currTmpBzrCurve.TryRender();
+                        _activeLayer.AddCurve(_currTmpBzrCurve);
+                        _currTmpBzrCurve = null;
+                        GeomObjectFactory.GetHelpPanel().SetText();
+                        _currState = UserActionState.Default;
+                    }
+                    else
+                    {
+                        GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                    }
+                }
+
             }
         }
         else if (_currTmpCircArc != null && _currCrvPtsLeft > 0)
@@ -157,14 +193,61 @@ public class GeometryManager : MonoBehaviour
             }
         }
 
-        if (editingCtlPt!= null)
+        if (editingCtlPt != null)
         {
+            _currEditingCtlPt = editingCtlPt;
             GeomObjectFactory.GetCtlPtEditPanel().AttachCtlPt(editingCtlPt);
         }
         else
         {
             GeomObjectFactory.GetCtlPtEditPanel().Release();
+            _currEditingCtlPt = null;
             _currState = UserActionState.SelectedCurve;
+
+            foreach (Transform pt in _currSelectedCurve.CtlPts)
+            {
+                pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
+            }
+
+        }
+    }
+    
+    private void HandleDrag()
+    {
+        if (Time.time - _dragStartTime > _dragDelay)
+        {
+            Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
+            RaycastHit? bestHit = null;
+            ControlPoint snapCtlPt = null;
+            LayerAxis snapAxis = null;
+            foreach (RaycastHit hit in hits)
+            {
+                ControlPoint hitCtlPt;
+                LayerAxis hitAxis;
+                if (snapCtlPt == null && hit.collider.gameObject == _activeLayer.gameObject)
+                {
+                    bestHit = hit;
+                }
+                else if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt)
+                {
+                    snapCtlPt = hitCtlPt;
+                    bestHit = hit;
+                }
+                else if (snapCtlPt == null && (hitAxis = hit.collider.GetComponent<LayerAxis>()) && hitAxis.ContainingLayer == _activeLayer)
+                {
+                    snapAxis = hitAxis;
+                    bestHit = hit;
+                }
+            }
+
+            if (bestHit.HasValue)
+            {
+                _currEditingCtlPt.transform.position = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+                _currSelectedCurve.UpdateControlPoint(_currEditingCtlPt);
+                GeomObjectFactory.GetCtlPtEditPanel().UpdateValuesFromCtlPt();
+                _currSelectedCurve.TryRender();
+            }
         }
     }
 
@@ -210,7 +293,25 @@ public class GeometryManager : MonoBehaviour
         {
             Debug.LogWarning("Started editing curve other than selected curve");
         }
+
+        foreach (Transform pt in crv.CtlPts)
+        {
+            pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlEditing();
+        }
+
         _currState = UserActionState.EditCurve;
+    }
+
+    public void DeleteCurve(CurveGeomBase crv)
+    {
+        if (crv != _currSelectedCurve)
+        {
+            Debug.LogWarning("Started editing curve other than selected curve");
+        }
+
+        GeomObjectFactory.GetCtlPtEditPanel().Release();
+        GeomObjectFactory.GetCurveActionPanel().Release();
+        _activeLayer.DeleteCurve(crv);
     }
 
     private string HelpString => string.Format("Creating a {0}.\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);
@@ -220,15 +321,15 @@ public class GeometryManager : MonoBehaviour
     private BezierCurveGeom _currTmpBzrCurve = null;
     private CircularArcGeom _currTmpCircArc = null;
     private CurveGeomBase _currSelectedCurve = null;
+    private ControlPoint _currEditingCtlPt = null;
     private int _currCrvPtsLeft = 0;
     private string _currCreatingObject = "";
 
     private List<PlaneLayer> _layers = new List<PlaneLayer>();
     private PlaneLayer _activeLayer = null;
 
-    private ControlPoint _selecedCtlPt = null;
     private Axis _dragAxis;
     private Vector3 _dragOrigin;
-    private float _dragTime = 0f;
+    private float _dragStartTime = 0f;
     private static readonly float _dragDelay = 0.5f;
 }

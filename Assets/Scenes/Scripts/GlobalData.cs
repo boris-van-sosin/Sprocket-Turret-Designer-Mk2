@@ -13,6 +13,8 @@ static class GlobalData
     public static readonly int GizmosLayerMask = LayerMask.GetMask("Gizmos");
 
     public static readonly Color DefaultCrvColor = new Color(207f, 207f, 0f);
-    public static readonly Color ConnectedCrvColor = new Color(0f, 207f, 207f);
+    public static readonly Color ConnectedCrvColor = new Color(0f, 128f, 0f);
     public static readonly Color SelectedCrvColor = new Color(207f, 207f, 102f);
+
+    public static float CurveConnectionTolerance = 1e-4f;
 }

@@ -93,7 +93,7 @@ public class PlaneLayer : MonoBehaviour
             {
                 ControlPoint ctlPt = c.GetComponent<ControlPoint>();
                 LayerAxis hitAxis = c.GetComponent<LayerAxis>();
-                if (ctlPt != null && ctlPt.ContainingCurve != currCrv && ContainsCtlPt(ctlPt) && !chain.Any(x => x.Item1 == ctlPt.ContainingCurve))
+                if (ctlPt != null && ctlPt.ContainingCurve != currCrv && ContainsCtlPt(ctlPt) && !chain.Exists(x => x.Item1 == ctlPt.ContainingCurve))
                 {
                     if ((ctlPt.transform.position - currPt).sqrMagnitude < GlobalData.CurveConnectionTolerance * GlobalData.CurveConnectionTolerance)
                     {
@@ -158,6 +158,14 @@ public class PlaneLayer : MonoBehaviour
         return sb.ToString();
     }
 
+    public void SetSelected(bool selected)
+    {
+        PlaneObject.gameObject.SetActive(selected);
+        UpArrow.gameObject.SetActive(selected);
+        DownArrow.gameObject.SetActive(selected);
+        AxisObj.gameObject.SetActive(selected);
+    }
+
     public float Elevation
     {
         get
@@ -170,5 +178,9 @@ public class PlaneLayer : MonoBehaviour
         }
     }
     private HashSet<CurveGeomBase> _curves = new HashSet<CurveGeomBase>();
-}
 
+    public Transform PlaneObject;
+    public Transform UpArrow;
+    public Transform DownArrow;
+    public Transform AxisObj;
+}

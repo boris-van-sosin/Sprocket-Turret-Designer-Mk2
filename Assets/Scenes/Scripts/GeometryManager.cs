@@ -19,8 +19,7 @@ public class GeometryManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _activeLayer = GeomObjectFactory.CreateLayer(0f);
-        _layers.Add(_activeLayer);
+        CreateEmptyLayer();
     }
 
     // Update is called once per frame
@@ -56,7 +55,7 @@ public class GeometryManager : MonoBehaviour
         {
             if (_currState == UserActionState.EditCurve)
             {
-                HandleDrag();
+                HandleDragCtlPt();
             }
         }
         else if (Input.GetMouseButtonUp(0))
@@ -80,11 +79,8 @@ public class GeometryManager : MonoBehaviour
                 {
                     ControlPoint hitCtlpt;
                     LayerAxis hitAxis;
-                    if (snapCtlPt == null && hit.collider.gameObject == _activeLayer.gameObject)
-                    {
-                        bestHit = hit;
-                    }
-                    else if ((hitCtlpt = hit.collider.GetComponent<ControlPoint>()) != null && _activeLayer.ContainsCtlPt(hitCtlpt))
+                    PlaneLayer hitLayer;
+                    if ((hitCtlpt = hit.collider.GetComponent<ControlPoint>()) != null && _activeLayer.ContainsCtlPt(hitCtlpt))
                     {
                         snapCtlPt = hitCtlpt;
                         bestHit = hit;
@@ -92,6 +88,10 @@ public class GeometryManager : MonoBehaviour
                     else if (snapCtlPt == null && (hitAxis = hit.collider.GetComponent<LayerAxis>()) && hitAxis.ContainingLayer == _activeLayer)
                     {
                         snapAxis = hitAxis;
+                        bestHit = hit;
+                    }
+                    else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+                    {
                         bestHit = hit;
                     }
                 }
@@ -135,35 +135,49 @@ public class GeometryManager : MonoBehaviour
     private void HandleDefaultClick()
     {
         Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        if (Physics.Raycast(r, out hit, 1000f, GlobalData.CurvesLayerMask | GlobalData.ControlPtsLayerMask))
+        RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.CurvesLayerMask | GlobalData.ControlPtsLayerMask | GlobalData.GizmosLayerMask);
+        bool selectedCrv = false;
+        PlaneLayer bestHitLayer = null;
+        foreach (RaycastHit hit in hits)
         {
-            CurveGeomBase hitCrv = hit.transform.parent.GetComponent<CurveGeomBase>();
-            if (hitCrv == _currSelectedCurve)
+            CurveGeomBase hitCrv;
+            PlaneLayer hitLayer;
+            if ((hitCrv = hit.collider.GetComponentInParent<CurveGeomBase>()) != null &&
+                _activeLayer.ContainsCurve(hitCrv))
             {
-                return;
-            }
-            else
-            {
-                if (_currSelectedCurve != null)
+                if (hitCrv == _currSelectedCurve)
                 {
-                    _currSelectedCurve.Selected = false;
+                    return;
                 }
-                _currSelectedCurve = hitCrv;
-                _currSelectedCurve.Selected = true;
+                else
+                {
+                    if (_currSelectedCurve != null)
+                    {
+                        _currSelectedCurve.Selected = false;
+                    }
+                    _currSelectedCurve = hitCrv;
+                    _currSelectedCurve.Selected = true;
+                }
+                if (_currSelectedCurve == null)
+                {
+                    return;
+                }
+                _currState = UserActionState.SelectedCurve;
+                Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(hit.point);
+                CurveActions actionsPanel = GeomObjectFactory.GetCurveActionPanel();
+                RectTransform rt = actionsPanel.GetComponent<RectTransform>();
+                rt.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
+                actionsPanel.AssignCurve(_currSelectedCurve);
+                selectedCrv = true;
+                break; //TODO: verify this
             }
-            if (_currSelectedCurve == null)
+            else if ((hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) != null)
             {
-                return;
+                bestHitLayer = hitLayer;
             }
-            _currState = UserActionState.SelectedCurve;
-            Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(hit.point);
-            CurveActions actionsPanel = GeomObjectFactory.GetCurveActionPanel();
-            RectTransform rt = actionsPanel.GetComponent<RectTransform>();
-            rt.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
-            actionsPanel.AssignCurve(_currSelectedCurve);
         }
-        else
+
+        if (!selectedCrv)
         {
             GeomObjectFactory.GetCurveActionPanel().Release();
             if (_currSelectedCurve != null)
@@ -172,6 +186,13 @@ public class GeometryManager : MonoBehaviour
             }
             _currSelectedCurve = null;
             _currState = UserActionState.Default;
+
+            if (bestHitLayer != null && bestHitLayer != _activeLayer)
+            {
+                _activeLayer.SetSelected(false);
+                _activeLayer = bestHitLayer;
+                _activeLayer.SetSelected(true);
+            }
         }
     }
 
@@ -212,7 +233,7 @@ public class GeometryManager : MonoBehaviour
         }
     }
     
-    private void HandleDrag()
+    private void HandleDragCtlPt()
     {
         if (Time.time - _dragStartTime > _dragDelay)
         {
@@ -225,11 +246,8 @@ public class GeometryManager : MonoBehaviour
             {
                 ControlPoint hitCtlPt;
                 LayerAxis hitAxis;
-                if (snapCtlPt == null && hit.collider.gameObject == _activeLayer.gameObject)
-                {
-                    bestHit = hit;
-                }
-                else if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt)
+                PlaneLayer hitLayer;
+                if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt)
                 {
                     snapCtlPt = hitCtlPt;
                     bestHit = hit;
@@ -237,6 +255,10 @@ public class GeometryManager : MonoBehaviour
                 else if (snapCtlPt == null && (hitAxis = hit.collider.GetComponent<LayerAxis>()) && hitAxis.ContainingLayer == _activeLayer)
                 {
                     snapAxis = hitAxis;
+                    bestHit = hit;
+                }
+                else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+                {
                     bestHit = hit;
                 }
             }
@@ -312,6 +334,31 @@ public class GeometryManager : MonoBehaviour
         GeomObjectFactory.GetCtlPtEditPanel().Release();
         GeomObjectFactory.GetCurveActionPanel().Release();
         _activeLayer.DeleteCurve(crv);
+        _currState = UserActionState.Default;
+    }
+
+    public void CreateEmptyLayer()
+    {
+        if (_layers.Count == 0)
+        {
+            _activeLayer = GeomObjectFactory.CreateLayer(0f);
+            _layers.Add(_activeLayer);
+        }
+        else
+        {
+            float maxH = _layers[0].Elevation;
+            for (int i = 1; i < _layers.Count; ++i)
+            {
+                if (_layers[i].Elevation > maxH)
+                {
+                    maxH = _layers[i].Elevation;
+                }
+            }
+            _activeLayer.SetSelected(false);
+            _activeLayer = GeomObjectFactory.CreateLayer(maxH + 0.1f);
+            _activeLayer.SetSelected(true);
+            _layers.Add(_activeLayer);
+        }
     }
 
     private string HelpString => string.Format("Creating a {0}.\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);

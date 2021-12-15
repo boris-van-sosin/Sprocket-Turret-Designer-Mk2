@@ -10,12 +10,14 @@ public class ObjectPrototypes : MonoBehaviour
     public LineRenderer CtlMeshPolylinePrototype;
     public PlaneLayer LayerPrototype;
     public BezierCurveGeom BezierPrototype;
+    public BSplineCurveGeom BSplinePrototype;
     public CircularArcGeom CircularArcPrototype;
     public CapsuleCollider CurveSegColliderPrototype;
     public Trihedron MoveTrihedton;
     //public Trihedron RotateTrihedton;
     public CurveActions CurveActionPanel;
     public CtlPtEditPanel ControlPointEditPanel;
+    public LayerActions LayerActionPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
     public Material CurveMtlDefault;
@@ -55,6 +57,11 @@ public class ObjectPrototypes : MonoBehaviour
         return Instantiate(BezierPrototype);
     }
 
+    public BSplineCurveGeom CreateBSplineCurve()
+    {
+        return Instantiate(BSplinePrototype);
+    }
+
     public CircularArcGeom CreateCircularArc()
     {
         return Instantiate(CircularArcPrototype);
@@ -88,6 +95,11 @@ public class ObjectPrototypes : MonoBehaviour
     public CtlPtEditPanel GetCtlPtEditPanel()
     {
         return ControlPointEditPanel;
+    }
+
+    public LayerActions GetLayerActionPanel()
+    {
+        return LayerActionPanel;
     }
 
     public HelpPanel GetHelpPanel()

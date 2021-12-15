@@ -68,6 +68,25 @@ public class BSplineCurveGeom : CurveGeomBase
         _order = order;
     }
 
+    public override CurveGeomBase Copy()
+    {
+        BSplineCurveGeom copy = GeomObjectFactory.CreateBSplineCurve();
+
+        foreach (Transform tr in CtlPts)
+        {
+            ControlPoint pt = GeomObjectFactory.CreateCtlPt(tr.position).GetComponent<ControlPoint>();
+            pt.transform.SetParent(copy.transform);
+            pt.ContainingCurve = copy;
+            copy._cltPtsTransforms.Add(pt.transform);
+        }
+
+        copy.SetOrder(Order);
+        copy._kv = new List<float>(_kv);
+
+        copy._innerCrv = new BSplineCurve<Vector3>(copy._cltPtsTransforms.Select(p => p.position), copy._kv, Blend);
+
+        return copy;
+    }
     public IReadOnlyList<float> KnotVector => _kv;
 
     private int _order;

@@ -163,11 +163,11 @@ public class GeometryManager : MonoBehaviour
                     return;
                 }
                 _currState = UserActionState.SelectedCurve;
-                Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(hit.point);
+                
                 CurveActions actionsPanel = GeomObjectFactory.GetCurveActionPanel();
-                RectTransform rt = actionsPanel.GetComponent<RectTransform>();
-                rt.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
-                actionsPanel.AssignCurve(_currSelectedCurve);
+                SetPanelPos(actionsPanel.GetComponent<RectTransform>(), hit.point);
+                
+                actionsPanel.AttachCurve(_currSelectedCurve);
                 selectedCrv = true;
                 break; //TODO: verify this
             }
@@ -177,7 +177,11 @@ public class GeometryManager : MonoBehaviour
             }
         }
 
-        if (!selectedCrv)
+        if (selectedCrv)
+        {
+            GeomObjectFactory.GetLayerActionPanel().Release();
+        }
+        else
         {
             GeomObjectFactory.GetCurveActionPanel().Release();
             if (_currSelectedCurve != null)
@@ -187,11 +191,15 @@ public class GeometryManager : MonoBehaviour
             _currSelectedCurve = null;
             _currState = UserActionState.Default;
 
-            if (bestHitLayer != null && bestHitLayer != _activeLayer)
+            if (bestHitLayer != null)
             {
-                _activeLayer.SetSelected(false);
-                _activeLayer = bestHitLayer;
-                _activeLayer.SetSelected(true);
+                if (bestHitLayer != _activeLayer)
+                {
+                    _activeLayer.SetSelected(false);
+                    _activeLayer = bestHitLayer;
+                    _activeLayer.SetSelected(true);
+                }
+                GeomObjectFactory.GetLayerActionPanel().AttachLayer(_activeLayer);
             }
         }
     }
@@ -217,7 +225,9 @@ public class GeometryManager : MonoBehaviour
         if (editingCtlPt != null)
         {
             _currEditingCtlPt = editingCtlPt;
-            GeomObjectFactory.GetCtlPtEditPanel().AttachCtlPt(editingCtlPt);
+            CtlPtEditPanel ctlPtPanel = GeomObjectFactory.GetCtlPtEditPanel();
+            ctlPtPanel.AttachCtlPt(editingCtlPt);
+            SetPanelPos(ctlPtPanel.GetComponent<RectTransform>(), editingCtlPt.transform.position);
         }
         else
         {
@@ -357,8 +367,95 @@ public class GeometryManager : MonoBehaviour
             _activeLayer.SetSelected(false);
             _activeLayer = GeomObjectFactory.CreateLayer(maxH + 0.1f);
             _activeLayer.SetSelected(true);
+            GeomObjectFactory.GetLayerActionPanel().AttachLayer(_activeLayer);
             _layers.Add(_activeLayer);
         }
+    }
+
+    public void StartScaleLayer(PlaneLayer l)
+    {
+        if (l != _activeLayer)
+        {
+            Debug.LogWarning("Tried to scale layer other than active layer");
+        }
+    }
+
+    public void DuplicateLayer(PlaneLayer l)
+    {
+        if (l != _activeLayer)
+        {
+            Debug.LogWarning("Tried to duplicate layer other than active layer");
+        }
+
+        float maxH = _layers[0].Elevation;
+        for (int i = 1; i < _layers.Count; ++i)
+        {
+            if (_layers[i].Elevation > maxH)
+            {
+                maxH = _layers[i].Elevation;
+            }
+        }
+
+        _activeLayer.SetSelected(false);
+        PlaneLayer nextLayer = _activeLayer.Duplicate(maxH + 0.1f);
+        nextLayer.SetSelected(true);
+        GeomObjectFactory.GetLayerActionPanel().AttachLayer(nextLayer);
+        _layers.Add(nextLayer);
+        _activeLayer = nextLayer;
+        _currState = UserActionState.Default;
+    }
+
+    public void ClearLayer(PlaneLayer l)
+    {
+        if (l != _activeLayer)
+        {
+            Debug.LogWarning("Tried to clear layer other than active layer");
+        }
+
+        _activeLayer.Clear();
+        _currState = UserActionState.Default;
+    }
+
+    public void DeleteLayer(PlaneLayer l)
+    {
+        if (l != _activeLayer)
+        {
+            Debug.LogWarning("Tried to delete layer other than active layer");
+        }
+
+        _activeLayer.Clear();
+        _activeLayer.SetSelected(false);
+        PlaneLayer toDelete = _activeLayer;
+
+        int activeIdx = _layers.IndexOf(_activeLayer);
+        if (activeIdx < 0)
+        {
+            Debug.LogError("Active layer not in list");
+        }
+        _layers.RemoveAt(activeIdx);
+        int nextActiveLayer = -1;
+        for (int i = 0; i < _layers.Count; ++i)
+        {
+            if (_layers[i] != _activeLayer && _layers[i].Elevation < _activeLayer.Elevation)
+            {
+                if (nextActiveLayer < 0 || _layers[i].Elevation > _layers[nextActiveLayer].Elevation)
+                {
+                    nextActiveLayer = i;
+                }
+            }
+        }
+        _activeLayer = _layers[nextActiveLayer];
+        GeomObjectFactory.GetLayerActionPanel().AttachLayer(_activeLayer);
+        _activeLayer.SetSelected(true);
+
+        Destroy(toDelete.gameObject);
+        _currState = UserActionState.Default;
+    }
+
+    private void SetPanelPos(RectTransform rtr, Vector3 rayCastPt)
+    {
+        Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(rayCastPt);
+        rtr.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
     }
 
     private string HelpString => string.Format("Creating a {0}.\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);

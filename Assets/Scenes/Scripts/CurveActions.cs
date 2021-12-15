@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CurveActions : MonoBehaviour
 {
-    public void AssignCurve(CurveGeomBase crv)
+    public void AttachCurve(CurveGeomBase crv)
     {
         gameObject.SetActive(true);
         _currCrv = crv;

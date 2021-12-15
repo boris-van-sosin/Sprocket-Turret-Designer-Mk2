@@ -29,6 +29,11 @@ public static class GeomObjectFactory
         return _prototypes.CreateBezierCurve();
     }
 
+    public static BSplineCurveGeom CreateBSplineCurve()
+    {
+        return _prototypes.CreateBSplineCurve();
+    }
+
     public static CircularArcGeom CreateCircularArc()
     {
         return _prototypes.CreateCircularArc();
@@ -76,6 +81,11 @@ public static class GeomObjectFactory
     public static CtlPtEditPanel GetCtlPtEditPanel()
     {
         return _prototypes.GetCtlPtEditPanel();
+    }
+
+    public static LayerActions GetLayerActionPanel()
+    {
+        return _prototypes.GetLayerActionPanel();
     }
 
     public static CameraControl GetCameraControl()

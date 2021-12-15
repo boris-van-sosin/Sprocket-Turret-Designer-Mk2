@@ -106,6 +106,7 @@ public abstract class CurveGeomBase : MonoBehaviour
             InnerCurve.UpdateControlPoint(idx, pt.transform.position);
         }
     }
+    public abstract CurveGeomBase Copy();
 
     public int NumSamples { get; set; }
     private int _colliderDensity;

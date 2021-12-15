@@ -17,4 +17,5 @@ static class GlobalData
     public static readonly Color SelectedCrvColor = new Color(207f, 207f, 102f);
 
     public static float CurveConnectionTolerance = 1e-4f;
+    public static float CopyTolerance = 1e-6f;
 }

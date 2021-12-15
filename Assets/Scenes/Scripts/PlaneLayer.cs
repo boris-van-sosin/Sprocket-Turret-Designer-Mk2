@@ -175,9 +175,46 @@ public class PlaneLayer : MonoBehaviour
         set
         {
             transform.position = new Vector3(transform.position.z, value, transform.position.x);
+            foreach (CurveGeomBase crv in _curves)
+            {
+                foreach (Transform ctlPtTr in crv.CtlPts)
+                {
+                    ctlPtTr.position = new Vector3(ctlPtTr.position.x, value, ctlPtTr.position.z);
+                    crv.UpdateControlPoint(ctlPtTr.GetComponent<ControlPoint>());
+                }
+                crv.TryRender();
+            }
         }
     }
     private HashSet<CurveGeomBase> _curves = new HashSet<CurveGeomBase>();
+
+    public PlaneLayer Duplicate(float elevation)
+    {
+        PlaneLayer copy = GeomObjectFactory.CreateLayer(elevation);
+
+        foreach (CurveGeomBase crv in _curves)
+        {
+            CurveGeomBase crvCopy = crv.Copy();
+            foreach (Transform ctlPtTr in crvCopy.CtlPts)
+            {
+                ctlPtTr.position = new Vector3(ctlPtTr.position.x, elevation, ctlPtTr.position.z);
+                crvCopy.UpdateControlPoint(ctlPtTr.GetComponent<ControlPoint>());
+            }
+            crvCopy.TryRender();
+            copy.AddCurve(crvCopy);
+        }
+
+        return copy;
+    }
+
+    public void Clear()
+    {
+        foreach (CurveGeomBase crv in _curves)
+        {
+            Destroy(crv.gameObject);
+        }
+        _curves.Clear();
+    }
 
     public Transform PlaneObject;
     public Transform UpArrow;

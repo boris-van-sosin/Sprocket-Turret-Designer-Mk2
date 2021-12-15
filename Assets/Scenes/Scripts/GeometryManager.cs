@@ -27,6 +27,8 @@ public class GeometryManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            _dragStartTime = Time.time;
+
             if (EventSystem.current.IsPointerOverGameObject())
             {
                 return;
@@ -48,7 +50,6 @@ public class GeometryManager : MonoBehaviour
             else if (_currState == UserActionState.EditCurve)
             {
                 HandleEditStep();
-                _dragStartTime = Time.time;
             }
         }
         else if (Input.GetMouseButton(0))
@@ -257,7 +258,7 @@ public class GeometryManager : MonoBehaviour
                 ControlPoint hitCtlPt;
                 LayerAxis hitAxis;
                 PlaneLayer hitLayer;
-                if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt)
+                if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt && _activeLayer.ContainsCtlPt(hitCtlPt))
                 {
                     snapCtlPt = hitCtlPt;
                     bestHit = hit;

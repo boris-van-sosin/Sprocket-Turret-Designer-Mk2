@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CircularArc<T> : ICurve<T>
@@ -50,6 +51,8 @@ public class CircularArc<T> : ICurve<T>
     public T RadiusVec => _blendFunc(Start, 1f, Center, -1f);
     public float Radius => _magnitudeFunc(RadiusVec);
     public T End => Eval(1f);
+
+    public IEnumerable<T> ControlPoints => new List<T>(3) { Start, Center, End };
 
     private readonly Func<T, float, T, float, T> _blendFunc;
     private readonly Func<T, float> _magnitudeFunc;

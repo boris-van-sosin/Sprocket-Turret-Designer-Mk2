@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface ICurve<T>
+public interface IImmutableCurve<T>
 {
     T Eval(float t);
-    void UpdateControlPoint(int idx, T newPt);
     ValueTuple<float, float> Domain { get; }
+    IEnumerable<T> ControlPoints { get; }
+}
+
+public interface ICurve<T> : IImmutableCurve<T>
+{
+    void UpdateControlPoint(int idx, T newPt);   
 }
 
 public abstract class CurveGeomBase : MonoBehaviour
@@ -96,7 +101,8 @@ public abstract class CurveGeomBase : MonoBehaviour
     public Vector3 EvalEnd() => InnerCurve.Eval(Domain.Item2);
     protected virtual (float, float) Domain => InnerCurve.Domain;
     protected abstract ICurve<Vector3> InnerCurve { get; }
-    protected static Vector3 Blend(Vector3 P1, float a, Vector3 P2, float b) => (P1 * a) + (P2 * b);
+    public IImmutableCurve<Vector3> GetCurve() => InnerCurve;
+    public static Vector3 Blend(Vector3 P1, float a, Vector3 P2, float b) => (P1 * a) + (P2 * b);
     public IReadOnlyList<Transform> CtlPts => _cltPtsTransforms;
     public void UpdateControlPoint(ControlPoint pt)
     {

@@ -37,7 +37,7 @@ public class PlaneLayer : MonoBehaviour
 
     public void CheckConnectivity()
     {
-        List<ValueTuple<CurveGeomBase, bool>> chain = new List<(CurveGeomBase, bool)>();
+        _chainBuf.Clear();
 
         bool fullyConnected = false;
         CurveGeomBase currCrv = null;
@@ -47,12 +47,12 @@ public class PlaneLayer : MonoBehaviour
         Vector3 axisVector = axis.transform.forward;
         Vector3 pt1 = axisCapsule.center - axisVector * (axisCapsule.height / 2f);
         Vector3 pt2 = axisCapsule.center + axisVector * (axisCapsule.height / 2f);
-        Collider[] candidateCtlPts = Physics.OverlapCapsule(pt1, pt2, axisCapsule.radius, GlobalData.ControlPtsLayerMask);
+        int numHits = Physics.OverlapCapsuleNonAlloc(pt1, pt2, axisCapsule.radius, _colliderBuf, GlobalData.ControlPtsLayerMask);
         float maxY = 0f;
         ControlPoint firstCtlPt = null;
-        foreach (Collider c in candidateCtlPts)
+        for (int i  = 0; i < numHits; ++i)
         {
-            ControlPoint ctlPt = c.GetComponent<ControlPoint>();
+            ControlPoint ctlPt = _colliderBuf[i].GetComponent<ControlPoint>();
             if (ContainsCtlPt(ctlPt))
             {
                 if (Mathf.Abs(ctlPt.transform.position.x) < GlobalData.CurveConnectionTolerance)
@@ -71,12 +71,12 @@ public class PlaneLayer : MonoBehaviour
             currCrv = firstCtlPt.ContainingCurve;
             if (currCrv.CtlPts[0].gameObject == firstCtlPt.gameObject)
             {
-                chain.Add((currCrv, false));
+                _chainBuf.Add((currCrv, false));
                 currPt = currCrv.EvalEnd();
             }
             else
             {
-                chain.Add((currCrv, true));
+                _chainBuf.Add((currCrv, true));
                 currPt = currCrv.EvalStart();
             }
         }
@@ -87,25 +87,25 @@ public class PlaneLayer : MonoBehaviour
 
         while (true)
         {
-            candidateCtlPts = Physics.OverlapSphere(currPt, axisCapsule.radius, GlobalData.ControlPtsLayerMask | GlobalData.LayersLayerMask);
+            numHits = Physics.OverlapSphereNonAlloc(currPt, axisCapsule.radius, _colliderBuf, GlobalData.ControlPtsLayerMask | GlobalData.LayersLayerMask);
             bool chainSuccess = false;
-            foreach (Collider c in candidateCtlPts)
+            for (int i = 0; i < numHits; ++i)
             {
-                ControlPoint ctlPt = c.GetComponent<ControlPoint>();
-                LayerAxis hitAxis = c.GetComponent<LayerAxis>();
-                if (ctlPt != null && ctlPt.ContainingCurve != currCrv && ContainsCtlPt(ctlPt) && !chain.Exists(x => x.Item1 == ctlPt.ContainingCurve))
+                ControlPoint ctlPt = _colliderBuf[i].GetComponent<ControlPoint>();
+                LayerAxis hitAxis = _colliderBuf[i].GetComponent<LayerAxis>();
+                if (ctlPt != null && ctlPt.ContainingCurve != currCrv && ContainsCtlPt(ctlPt) && !_chainBuf.Exists(x => x.Item1 == ctlPt.ContainingCurve))
                 {
                     if ((ctlPt.transform.position - currPt).sqrMagnitude < GlobalData.CurveConnectionTolerance * GlobalData.CurveConnectionTolerance)
                     {
                         currCrv = ctlPt.ContainingCurve;
                         if (currCrv.CtlPts[0].gameObject == ctlPt.gameObject)
                         {
-                            chain.Add((currCrv, false));
+                            _chainBuf.Add((currCrv, false));
                             currPt = currCrv.EvalEnd();
                         }
                         else
                         {
-                            chain.Add((currCrv, true));
+                            _chainBuf.Add((currCrv, true));
                             currPt = currCrv.EvalStart();
                         }
                         chainSuccess = true;
@@ -131,12 +131,18 @@ public class PlaneLayer : MonoBehaviour
 
         if (fullyConnected)
         {
-            Debug.Log(string.Format("Found a fully connected chain of {0} curves: {1}", chain.Count, DbgPrintCurveChain(chain)));
+            Debug.Log(string.Format("Found a fully connected chain of {0} curves: {1}", _chainBuf.Count, DbgPrintCurveChain(_chainBuf)));
         }
         else
         {
-            Debug.Log(string.Format("Layer is not fully connected. Max chain of {0} curves: {1}", chain.Count, DbgPrintCurveChain(chain)));
+            Debug.Log(string.Format("Layer is not fully connected. Max chain of {0} curves: {1}", _chainBuf.Count, DbgPrintCurveChain(_chainBuf)));
         }
+    }
+
+    public List<ValueTuple<CurveGeomBase, bool>> GetConnectedChain()
+    {
+        CheckConnectivity();
+        return new List<(CurveGeomBase, bool)>(_chainBuf);
     }
 
     private string DbgPrintCurveChain(List<ValueTuple<CurveGeomBase, bool>> chain)
@@ -186,7 +192,10 @@ public class PlaneLayer : MonoBehaviour
             }
         }
     }
+
     private HashSet<CurveGeomBase> _curves = new HashSet<CurveGeomBase>();
+    private Collider[] _colliderBuf = new Collider[10000];
+    private List<ValueTuple<CurveGeomBase, bool>> _chainBuf = new List<(CurveGeomBase, bool)>();
 
     public PlaneLayer Duplicate(float elevation)
     {

@@ -381,6 +381,22 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
+    public void DuplicateLayer()
+    {
+        if (_layers.Count > 0)
+        {
+            int topLayer = 0;
+            for (int i = 1; i < _layers.Count; ++i)
+            {
+                if (_layers[i].Elevation > _layers[topLayer].Elevation)
+                {
+                    topLayer = i;
+                }
+            }
+            DuplicateLayer(_layers[topLayer]);
+        }
+    }
+
     public void DuplicateLayer(PlaneLayer l)
     {
         if (l != _activeLayer)
@@ -424,6 +440,12 @@ public class GeometryManager : MonoBehaviour
             Debug.LogWarning("Tried to delete layer other than active layer");
         }
 
+        if (_layers.Count <= 1)
+        {
+            Debug.LogWarning("Cannot delete last layer");
+            return;
+        }
+
         _activeLayer.Clear();
         _activeLayer.SetSelected(false);
         PlaneLayer toDelete = _activeLayer;
@@ -451,6 +473,11 @@ public class GeometryManager : MonoBehaviour
 
         Destroy(toDelete.gameObject);
         _currState = UserActionState.Default;
+    }
+
+    public void GeneratePreview()
+    {
+        MeshGenerator.GenerateMesh(_layers);
     }
 
     private void SetPanelPos(RectTransform rtr, Vector3 rayCastPt)

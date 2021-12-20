@@ -192,6 +192,8 @@ public class BSplineCurve<T> : ICurve<T>
 
     public (float, float) Domain => BSplineUtils.GetDomain(_kv, Order);
 
+    public IEnumerable<T> ControlPoints => _ctlMesh;
+
     public readonly int Order;
     protected readonly T[] _ctlMesh;
     protected readonly float[] _kv;

@@ -486,6 +486,32 @@ public class GeometryManager : MonoBehaviour
         rtr.anchoredPosition = new Vector2(screenPt.x, screenPt.y);
     }
 
+    public void AssignGizmos(IEnumerable<(Vector3, Vector3, Color)> lines, IEnumerable<(Vector3, Color)> points)
+    {
+        _lineGizmos.Clear();
+        if (lines != null) { _lineGizmos.AddRange(lines); }
+        _pointGizmos.Clear();
+        if (points != null) { _pointGizmos.AddRange(points); }
+    }
+
+    void OnDrawGizmos()
+    {
+        foreach (var line in _lineGizmos)
+        {
+            Gizmos.color = line.Item3;
+            Gizmos.DrawLine(line.Item1, line.Item2);
+        }
+
+        foreach (var pt in _pointGizmos)
+        {
+            Gizmos.color = pt.Item2;
+            Gizmos.DrawSphere(pt.Item1, 0.01f);
+        }
+    }
+
+    private List<(Vector3, Vector3, Color)> _lineGizmos = new List<(Vector3, Vector3, Color)>();
+    private List<(Vector3, Color)> _pointGizmos = new List<(Vector3, Color)>();
+
     private string HelpString => string.Format("Creating a {0}.\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);
 
     private UserActionState _currState = UserActionState.Default;

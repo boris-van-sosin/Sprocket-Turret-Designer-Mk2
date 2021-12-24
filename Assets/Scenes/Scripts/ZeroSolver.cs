@@ -86,7 +86,18 @@ public class ZeroSolver
         {
             try
             {
-                return (new List<float>() { SolveNumeric(crv, dCrv, maxNumericIters, tolerance, crossingParam) }, SolverUtils.SolverResult.HasZeroCrossing);
+                if (allNegative)
+                {
+                    return (new List<float>() { SolveNumeric(crv, dCrv, maxNumericIters, tolerance, crossingParam) }, SolverUtils.SolverResult.AllNegative);
+                }
+                else if (allPositive)
+                {
+                    return (new List<float>() { SolveNumeric(crv, dCrv, maxNumericIters, tolerance, crossingParam) }, SolverUtils.SolverResult.AllPositive);
+                }
+                else
+                {
+                    return (new List<float>() { SolveNumeric(crv, dCrv, maxNumericIters, tolerance, crossingParam) }, SolverUtils.SolverResult.HasZeroCrossing);
+                }
             }
             catch (Exception exc)
             {

@@ -42,11 +42,11 @@ public class PlaneLayer : MonoBehaviour
         bool fullyConnected = false;
         CurveGeomBase currCrv = null;
         Vector3 currPt = Vector3.zero;
-        LayerAxis axis = GetComponentInChildren<LayerAxis>();
-        CapsuleCollider axisCapsule = axis.GetComponentInChildren<CapsuleCollider>();
+        LayerAxis axis = GetComponentInChildren<LayerAxis>(true);
+        CapsuleCollider axisCapsule = axis.GetComponentInChildren<CapsuleCollider>(true);
         Vector3 axisVector = axis.transform.forward;
-        Vector3 pt1 = axisCapsule.center - axisVector * (axisCapsule.height / 2f);
-        Vector3 pt2 = axisCapsule.center + axisVector * (axisCapsule.height / 2f);
+        Vector3 pt1 = axis.transform.position - axisVector * (axisCapsule.height / 2f);
+        Vector3 pt2 = axis.transform.position + axisVector * (axisCapsule.height / 2f);
         int numHits = Physics.OverlapCapsuleNonAlloc(pt1, pt2, axisCapsule.radius, _colliderBuf, GlobalData.ControlPtsLayerMask);
         float maxY = 0f;
         ControlPoint firstCtlPt = null;

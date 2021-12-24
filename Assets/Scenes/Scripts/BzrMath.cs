@@ -74,7 +74,7 @@ public class BezierCurve<T> : ICurve<T>
         {
             for (int j = 0; j < _ctlMesh.Length - i; ++j)
             {
-                secondPts[j] = _blendFunc(_ctlMesh[j], tc, _ctlMesh[j + 1], t);
+                secondPts[j] = _blendFunc(secondPts[j], tc, secondPts[j + 1], t);
             }
             firstPts[i] = _blendFunc(secondPts[0], 1f, secondPts[0], 0f);
         }

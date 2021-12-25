@@ -49,6 +49,7 @@ public class GeometryManager : MonoBehaviour
             }
             else if (_currState == UserActionState.EditCurve)
             {
+                _enableDrag = true;
                 HandleEditStep();
             }
         }
@@ -62,6 +63,7 @@ public class GeometryManager : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             _dragStartTime = Time.time;
+            _enableDrag = false;
         }
     }
 
@@ -246,7 +248,7 @@ public class GeometryManager : MonoBehaviour
     
     private void HandleDragCtlPt()
     {
-        if (Time.time - _dragStartTime > _dragDelay)
+        if (_enableDrag && Time.time - _dragStartTime > _dragDelay)
         {
             Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
@@ -477,7 +479,25 @@ public class GeometryManager : MonoBehaviour
 
     public void GeneratePreview()
     {
-        MeshGenerator.GenerateMesh(_layers);
+        MeshGenerator.QuadMesh quads = MeshGenerator.GenerateQuadMesh(_layers, 5);
+        Transform previewObj = GeomObjectFactory.GetPreviewObject();
+        previewObj.gameObject.SetActive(true);
+        previewObj.Find("PreviewCore").gameObject.SetActive(false);
+        MeshFilter mf = previewObj.GetComponent<MeshFilter>();
+        mf.mesh = MeshGenerator.AssignToMesh(quads);
+    }
+
+    public void GenerateHexPreview()
+    {
+        MeshGenerator.HexMesh hexes = MeshGenerator.GenerateHexMesh(_layers, 5);
+        Transform previewObj = GeomObjectFactory.GetPreviewObject();
+        previewObj.gameObject.SetActive(true);
+        Transform previewCore = previewObj.Find("PreviewCore");
+        previewCore.gameObject.SetActive(true);
+        previewCore.transform.localScale = hexes.CoreSize;
+        previewCore.transform.position = new Vector3(0f, hexes.CoreElevation, 0f);
+        MeshFilter mf = previewObj.GetComponent<MeshFilter>();
+        mf.mesh = MeshGenerator.AssignToMesh(hexes, 0f);
     }
 
     private void SetPanelPos(RectTransform rtr, Vector3 rayCastPt)
@@ -529,5 +549,6 @@ public class GeometryManager : MonoBehaviour
     private Axis _dragAxis;
     private Vector3 _dragOrigin;
     private float _dragStartTime = 0f;
+    private bool _enableDrag = false;
     private static readonly float _dragDelay = 0.5f;
 }

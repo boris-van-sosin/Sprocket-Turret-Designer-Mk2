@@ -20,6 +20,7 @@ public class ObjectPrototypes : MonoBehaviour
     public LayerActions LayerActionPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
+    public Transform PreviewObject;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
     public Material CtlPtMtlDefault;
@@ -110,6 +111,11 @@ public class ObjectPrototypes : MonoBehaviour
     public CameraControl GetCameraControl()
     {
         return CamControl;
+    }
+
+    public Transform GetPreviewObject()
+    {
+        return PreviewObject;
     }
 
     public Material GetCurveMtlDefault()

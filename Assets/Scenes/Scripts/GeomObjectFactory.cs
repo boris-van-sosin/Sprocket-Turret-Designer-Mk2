@@ -93,6 +93,11 @@ public static class GeomObjectFactory
         return _prototypes.GetCameraControl();
     }
 
+    public static Transform GetPreviewObject()
+    {
+        return _prototypes.GetPreviewObject();
+    }
+
     public static Material GetCurveMtlDefault()
     {
         return _prototypes.GetCurveMtlDefault();

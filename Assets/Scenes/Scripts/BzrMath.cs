@@ -201,7 +201,7 @@ public class WeightedlBezierCurve<T> : BezierCurve<T>
         }
     }
 
-    public virtual T Eval(float x)
+    public override T Eval(float x)
     {
         int i = 0;
         foreach (float b in BezierUtils.EvalBezierBasis(Order, x))

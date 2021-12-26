@@ -225,6 +225,8 @@ public class PlaneLayer : MonoBehaviour
         _curves.Clear();
     }
 
+    public IReadOnlyCollection<CurveGeomBase> Curves => _curves;
+
     public Transform PlaneObject;
     public Transform UpArrow;
     public Transform DownArrow;

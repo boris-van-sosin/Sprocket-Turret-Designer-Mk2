@@ -500,6 +500,11 @@ public class GeometryManager : MonoBehaviour
         mf.mesh = MeshGenerator.AssignToMesh(hexes, 0f);
     }
 
+    public void DownloadStructureDef()
+    {
+        JavascripAdapter.DownloadData(SerializationUtils.Serialize(_layers), "txt", "MyTurret");
+    }
+
     private void SetPanelPos(RectTransform rtr, Vector3 rayCastPt)
     {
         Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(rayCastPt);

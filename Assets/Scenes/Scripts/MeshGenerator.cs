@@ -166,6 +166,7 @@ public static class MeshGenerator
             Hexes = new List<Hex>(processed.FrontSamplePoints.Count + processed.SideSamplePoints.Count + processed.RearSamplePoints.Count)
         };
         int vertexIdx = 0, currlayerBase = 0, lastLayerBase = 0;
+        float frontRearMinZ = -1f, sideMinX = -1f;
         for (int i = 0; i < processed.NumLayers; ++i)
         {
             currlayerBase = vertexIdx;
@@ -176,7 +177,9 @@ public static class MeshGenerator
                 ICurve<Vector3> currCrv = processed.SplitStruct.FrontCurves[i].Curves[crvIdx].Item1;
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
-                    hexes.BoundaryVertices.Add(currCrv.Eval(t));
+                    Vector3 pt = currCrv.Eval(t);
+                    hexes.BoundaryVertices.Add(pt);
+                    if (sampleIdx == 0 || Mathf.Abs(pt.z) < frontRearMinZ) { frontRearMinZ = Mathf.Abs(pt.z); }
 
                     if (layerVertexIdx > 0)
                     {
@@ -210,7 +213,9 @@ public static class MeshGenerator
                 ICurve<Vector3> currCrv = processed.SplitStruct.SideCurves[i].Curves[crvIdx].Item1;
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
-                    hexes.BoundaryVertices.Add(currCrv.Eval(t));
+                    Vector3 pt = currCrv.Eval(t);
+                    hexes.BoundaryVertices.Add(pt);
+                    if (sampleIdx == 0 || Mathf.Abs(pt.z) < sideMinX) { sideMinX = Mathf.Abs(pt.x); }
 
                     if (layerVertexIdx > 0)
                     {
@@ -244,7 +249,9 @@ public static class MeshGenerator
                 ICurve<Vector3> currCrv = processed.SplitStruct.RearCurves[i].Curves[crvIdx].Item1;
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
-                    hexes.BoundaryVertices.Add(currCrv.Eval(t));
+                    Vector3 pt = currCrv.Eval(t);
+                    hexes.BoundaryVertices.Add(pt);
+                    if (sampleIdx == 0 || Mathf.Abs(pt.z) < frontRearMinZ) { frontRearMinZ = Mathf.Abs(pt.z); }
 
                     if (layerVertexIdx > 0)
                     {
@@ -273,14 +280,14 @@ public static class MeshGenerator
             lastLayerBase = currlayerBase;
         }
 
-        float minR = hexes.BoundaryVertices[0].sqrMagnitude;
+        float minR = new Vector2(hexes.BoundaryVertices[0].x, hexes.BoundaryVertices[0].z).sqrMagnitude;
         float minH = hexes.BoundaryVertices[0].y;
         float maxH = hexes.BoundaryVertices[0].y;
         foreach (Vector3 v in hexes.BoundaryVertices)
         {
             if (v.sqrMagnitude < minR)
             {
-                minR = v.sqrMagnitude;
+                minR = new Vector2(v.x, v.z).sqrMagnitude;
             }
             if (v.y < minH)
             {
@@ -291,7 +298,7 @@ public static class MeshGenerator
                 maxH = v.y;
             }
         }
-        minR = Mathf.Sqrt(minR);
+        minR = Mathf.Min(Mathf.Sqrt(minR), frontRearMinZ, sideMinX);
         hexes.CoreSize = new Vector3(minR * 2f / Sqrt2, maxH - minH, minR * 2f / Sqrt2);
         hexes.CoreElevation = minH + hexes.CoreSize.y * 0.5f;
 

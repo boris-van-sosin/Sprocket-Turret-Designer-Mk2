@@ -5622,7 +5622,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4410202685147067836, guid: 38dcadc1199cd174f80d4805fc3de6db, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 124
+      value: 154
       objectReference: {fileID: 0}
     - target: {fileID: 4410202685147067836, guid: 38dcadc1199cd174f80d4805fc3de6db, type: 3}
       propertyPath: m_SizeDelta.y
@@ -5679,10 +5679,6 @@ PrefabInstance:
     - target: {fileID: 7813424097877022336, guid: 38dcadc1199cd174f80d4805fc3de6db, type: 3}
       propertyPath: m_Name
       value: CurvePanel
-      objectReference: {fileID: 0}
-    - target: {fileID: 7813424097877022336, guid: 38dcadc1199cd174f80d4805fc3de6db, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 38dcadc1199cd174f80d4805fc3de6db, type: 3}

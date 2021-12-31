@@ -18,10 +18,15 @@ public class CurveActions : MonoBehaviour
 
     public void OnMoveAction()
     {
-
+        GeomObjectFactory.GetGeometryManager().StartMoveCurve(_currCrv);
     }
 
     public void OnRotateAction()
+    {
+
+    }
+
+    public void OnScaleAction()
     {
 
     }

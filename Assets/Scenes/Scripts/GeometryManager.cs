@@ -12,6 +12,7 @@ public class GeometryManager : MonoBehaviour
         CreateCurve,
         SelectedCurve,
         EditCurve,
+        MoveCtlPtViaTrihedron,
         MoveCurve,
         RotateCurve
     }
@@ -59,11 +60,19 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleDragCtlPt();
             }
+            else if (_currState == UserActionState.MoveCtlPtViaTrihedron)
+            {
+                HandleMoveCtlPtViaTrihedron();
+            }
         }
         else if (Input.GetMouseButtonUp(0))
         {
             _dragStartTime = Time.time;
             _enableDrag = false;
+            if (_currState == UserActionState.MoveCtlPtViaTrihedron)
+            {
+                HandleFinishMoveCtlPtViaTrihedron();
+            }
         }
     }
 
@@ -210,11 +219,13 @@ public class GeometryManager : MonoBehaviour
     private void HandleEditStep()
     {
         Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.ControlPtsLayerMask);
+        RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.ControlPtsLayerMask | GlobalData.GizmosLayerMask);
         ControlPoint editingCtlPt = null;
+        Trihedron editingTri = null;
         foreach (RaycastHit hit in hits)
         {
             ControlPoint hitCtlPt = null;
+            Trihedron hitTri = null;
             if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null)
             {
                 if (hitCtlPt.ContainingCurve == _currSelectedCurve)
@@ -222,6 +233,19 @@ public class GeometryManager : MonoBehaviour
                     editingCtlPt = hitCtlPt;
                     break;
                 }
+            }
+            else if ((hitTri = hit.collider.GetComponentInParent<Trihedron>()) != null)
+            {
+                if (hit.collider == _moveTrihedron.XTool)
+                {
+                    _dragAxis = Axis.X;
+                }
+                else if (hit.collider == _moveTrihedron.ZTool)
+                {
+                    _dragAxis = Axis.Z;
+                }
+                editingTri = hitTri;
+                break;
             }
         }
 
@@ -231,10 +255,22 @@ public class GeometryManager : MonoBehaviour
             CtlPtEditPanel ctlPtPanel = GeomObjectFactory.GetCtlPtEditPanel();
             ctlPtPanel.AttachCtlPt(editingCtlPt);
             SetPanelPos(ctlPtPanel.GetComponent<RectTransform>(), editingCtlPt.transform.position);
+            _moveTrihedron = GeomObjectFactory.GetMoveTridehron(_currEditingCtlPt.transform.position);
+        }
+        else if (editingTri != null)
+        {
+            if (_currEditingCtlPt == null)
+            {
+                Debug.LogError("Tried to move control point via trihedron without selected control point.");
+            }
+
+            _dragOrigin = _currEditingCtlPt.transform.position;
+            _currState = UserActionState.MoveCtlPtViaTrihedron;
         }
         else
         {
             GeomObjectFactory.GetCtlPtEditPanel().Release();
+            if (_moveTrihedron != null) { _moveTrihedron.ReleaseTrihedron(); }
             _currEditingCtlPt = null;
             _currState = UserActionState.SelectedCurve;
 
@@ -284,6 +320,47 @@ public class GeometryManager : MonoBehaviour
                 _currSelectedCurve.TryRender();
             }
         }
+    }
+
+    private void HandleMoveCtlPtViaTrihedron()
+    {
+        Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask);
+        RaycastHit? bestHit = null;
+        ControlPoint snapCtlPt = null;
+        LayerAxis snapAxis = null;
+        foreach (RaycastHit hit in hits)
+        {
+            PlaneLayer hitLayer;
+            if ((hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+            {
+                bestHit = hit;
+            }
+        }
+        if (bestHit.HasValue)
+        {
+            Vector3 resPoint = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+            if (_dragAxis == Axis.X)
+            {
+                resPoint.y = _dragOrigin.y;
+                resPoint.z = _dragOrigin.z;
+            }
+            else if (_dragAxis == Axis.Z)
+            {
+                resPoint.x = _dragOrigin.x;
+                resPoint.y = _dragOrigin.y;
+            }
+            _currEditingCtlPt.transform.position = resPoint;
+            _moveTrihedron.transform.position = resPoint;
+            _currSelectedCurve.UpdateControlPoint(_currEditingCtlPt);
+            GeomObjectFactory.GetCtlPtEditPanel().UpdateValuesFromCtlPt();
+            _currSelectedCurve.TryRender();
+        }
+    }
+
+    private void HandleFinishMoveCtlPtViaTrihedron()
+    {
+        _currState = UserActionState.EditCurve;
     }
 
     public void StartCreateLine()
@@ -545,6 +622,7 @@ public class GeometryManager : MonoBehaviour
     private CircularArcGeom _currTmpCircArc = null;
     private CurveGeomBase _currSelectedCurve = null;
     private ControlPoint _currEditingCtlPt = null;
+    private Trihedron _moveTrihedron = null;
     private int _currCrvPtsLeft = 0;
     private string _currCreatingObject = "";
 

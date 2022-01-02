@@ -17,7 +17,11 @@ public class GeometryManager : MonoBehaviour
         StartMoveCurve,
         MoveCurve,
         StartRotateCurve,
-        RotateCurve
+        StartRotateCurveSelectPoint,
+        RotateCurve,
+        StartScaleCurve,
+        StartScaleCurveSelectPoint,
+        ScaleCurve
     }
 
     private enum TransformType
@@ -30,6 +34,7 @@ public class GeometryManager : MonoBehaviour
     private enum TransformPhase
     {
         Start,
+        PivotSelected,
         InTransform,
         Finish
     }
@@ -74,9 +79,21 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleTransformCurve(TransformType.Move, TransformPhase.Start);
             }
-            else if (_currState == UserActionState.MoveCurve)
+            else if (_currState == UserActionState.StartRotateCurve)
             {
-                HandleTransformCurve(TransformType.Move, TransformPhase.Finish);
+                HandleTransformCurve(TransformType.Rotate, TransformPhase.Start);
+            }
+            else if (_currState == UserActionState.StartRotateCurveSelectPoint)
+            {
+                HandleTransformCurve(TransformType.Rotate, TransformPhase.PivotSelected);
+            }
+            else if (_currState == UserActionState.StartScaleCurve)
+            {
+                HandleTransformCurve(TransformType.Scale, TransformPhase.Start);
+            }
+            else if (_currState == UserActionState.StartScaleCurveSelectPoint)
+            {
+                HandleTransformCurve(TransformType.Scale, TransformPhase.PivotSelected);
             }
         }
         else if (Input.GetMouseButton(0))
@@ -89,7 +106,18 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleMoveCtlPtViaTrihedron();
             }
-
+            else if (_currState == UserActionState.MoveCurve)
+            {
+                HandleTransformCurve(TransformType.Move, TransformPhase.InTransform);
+            }
+            else if (_currState == UserActionState.RotateCurve)
+            {
+                HandleTransformCurve(TransformType.Rotate, TransformPhase.InTransform);
+            }
+            else if (_currState == UserActionState.ScaleCurve)
+            {
+                HandleTransformCurve(TransformType.Scale, TransformPhase.InTransform);
+            }
         }
         else if (Input.GetMouseButtonUp(0))
         {
@@ -99,12 +127,17 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleFinishMoveCtlPtViaTrihedron();
             }
-        }
-        else
-        {
-            if (_currState == UserActionState.MoveCurve)
+            else if (_currState == UserActionState.MoveCurve)
             {
-                HandleTransformCurve(TransformType.Move, TransformPhase.InTransform);
+                HandleTransformCurve(TransformType.Move, TransformPhase.Finish);
+            }
+            else if (_currState == UserActionState.RotateCurve)
+            {
+                HandleTransformCurve(TransformType.Rotate, TransformPhase.Finish);
+            }
+            else if (_currState == UserActionState.ScaleCurve)
+            {
+                HandleTransformCurve(TransformType.Scale, TransformPhase.Finish);
             }
         }
     }
@@ -269,6 +302,7 @@ public class GeometryManager : MonoBehaviour
             }
             else if ((hitTri = hit.collider.GetComponentInParent<Trihedron>()) != null)
             {
+                _dragOrigin = new Vector3(hit.point.x, _currEditingCtlPt.transform.position.y, hit.point.z);
                 if (hit.collider == _moveTrihedron.XTool)
                 {
                     _dragAxis = Axis.X;
@@ -297,7 +331,7 @@ public class GeometryManager : MonoBehaviour
                 Debug.LogError("Tried to move control point via trihedron without selected control point.");
             }
 
-            _dragOrigin = _currEditingCtlPt.transform.position;
+            _dragCtlPtOldPos = _currEditingCtlPt.transform.position;
             _currState = UserActionState.MoveCtlPtViaTrihedron;
         }
         else
@@ -383,8 +417,8 @@ public class GeometryManager : MonoBehaviour
                 resPoint.x = _dragOrigin.x;
                 resPoint.y = _dragOrigin.y;
             }
-            _currEditingCtlPt.transform.position = resPoint;
-            _moveTrihedron.transform.position = resPoint;
+            _currEditingCtlPt.transform.position = _dragCtlPtOldPos + resPoint - _dragOrigin;
+            _moveTrihedron.transform.position = _currEditingCtlPt.transform.position;
             _currSelectedCurve.UpdateControlPoint(_currEditingCtlPt);
             GeomObjectFactory.GetCtlPtEditPanel().UpdateValuesFromCtlPt();
             _currSelectedCurve.TryRender();
@@ -427,21 +461,75 @@ public class GeometryManager : MonoBehaviour
         if (bestHit.HasValue)
         {
             Vector3 pt = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
-            if (phase == TransformPhase.Start)
+            if (tr == TransformType.Move)
             {
-                _dragOrigin = pt;
-                _transformCurveOrigPts.Clear();
-                _transformCurveOrigPts.AddRange(_currSelectedCurve.CtlPts.Select(p => p.position));
-            }
-            else
-            {
-                Vector3 moveVec = pt - _dragOrigin;
-                for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                if (phase == TransformPhase.Start)
                 {
-                    _currSelectedCurve.CtlPts[i].position = _transformCurveOrigPts[i] + moveVec;
-                    _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                    _dragOrigin = pt;
+                    _transformCurveOrigPts.Clear();
+                    _transformCurveOrigPts.AddRange(_currSelectedCurve.CtlPts.Select(p => p.position));
                 }
-                _currSelectedCurve.TryRender();
+                else
+                {
+                    Vector3 moveVec = pt - _dragOrigin;
+                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                    {
+                        _currSelectedCurve.CtlPts[i].position = _transformCurveOrigPts[i] + moveVec;
+                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                    }
+                    _currSelectedCurve.TryRender();
+                }
+            }
+            else if (tr == TransformType.Rotate)
+            {
+                if (phase == TransformPhase.Start)
+                {
+                    _scaleRotatePoint = pt;
+                    _transformCurveOrigPts.Clear();
+                    _transformCurveOrigPts.AddRange(_currSelectedCurve.CtlPts.Select(p => p.position));
+                }
+                else if (phase == TransformPhase.PivotSelected)
+                {
+                    _dragOrigin = pt;
+                }
+                else
+                {
+                    Vector3 origVec = _dragOrigin - _scaleRotatePoint;
+                    Vector3 vec = pt - _scaleRotatePoint;
+                    float angle = Vector3.SignedAngle(origVec, vec, Vector3.up);
+                    Quaternion q = Quaternion.AngleAxis(angle, Vector3.up);
+                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                    {
+                        _currSelectedCurve.CtlPts[i].position = (q * (_transformCurveOrigPts[i] - _scaleRotatePoint)) + _scaleRotatePoint;
+                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                    }
+                    _currSelectedCurve.TryRender();
+                }
+            }
+            else if (tr == TransformType.Scale)
+            {
+                if (phase == TransformPhase.Start)
+                {
+                    _scaleRotatePoint = pt;
+                    _transformCurveOrigPts.Clear();
+                    _transformCurveOrigPts.AddRange(_currSelectedCurve.CtlPts.Select(p => p.position));
+                }
+                else if (phase == TransformPhase.PivotSelected)
+                {
+                    _dragOrigin = pt;
+                }
+                else
+                {
+                    Vector3 origVec = _dragOrigin - _scaleRotatePoint;
+                    Vector3 vec = pt - _scaleRotatePoint;
+                    float factor = Mathf.Sqrt(vec.sqrMagnitude / origVec.sqrMagnitude);
+                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                    {
+                        _currSelectedCurve.CtlPts[i].position = ((_transformCurveOrigPts[i] - _scaleRotatePoint) * factor) + _scaleRotatePoint;
+                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                    }
+                    _currSelectedCurve.TryRender();
+                }
             }
         }
 
@@ -453,9 +541,10 @@ public class GeometryManager : MonoBehaviour
                     _currState = UserActionState.MoveCurve;
                     break;
                 case TransformType.Rotate:
-                    _currState = UserActionState.RotateCurve;
+                    _currState = _currState == UserActionState.StartRotateCurve ? UserActionState.StartRotateCurveSelectPoint : UserActionState.RotateCurve;
                     break;
                 case TransformType.Scale:
+                    _currState = _currState == UserActionState.StartScaleCurve ? UserActionState.StartScaleCurveSelectPoint : UserActionState.ScaleCurve;
                     break;
                 default:
                     break;
@@ -531,6 +620,36 @@ public class GeometryManager : MonoBehaviour
         }
 
         _currState = UserActionState.StartMoveCurve;
+    }
+
+    public void StartRotateCurve(CurveGeomBase crv)
+    {
+        if (crv != _currSelectedCurve)
+        {
+            Debug.LogWarning("Started editing curve other than selected curve");
+        }
+
+        foreach (Transform pt in crv.CtlPts)
+        {
+            pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
+        }
+
+        _currState = UserActionState.StartRotateCurve;
+    }
+
+    public void StartScaleCurve(CurveGeomBase crv)
+    {
+        if (crv != _currSelectedCurve)
+        {
+            Debug.LogWarning("Started editing curve other than selected curve");
+        }
+
+        foreach (Transform pt in crv.CtlPts)
+        {
+            pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
+        }
+
+        _currState = UserActionState.StartScaleCurve;
     }
 
     public void DeleteCurve(CurveGeomBase crv)
@@ -750,6 +869,8 @@ public class GeometryManager : MonoBehaviour
 
     private Axis _dragAxis;
     private Vector3 _dragOrigin;
+    private Vector3 _dragCtlPtOldPos;
+    private Vector3 _scaleRotatePoint;
     private List<Vector3> _transformCurveOrigPts = new List<Vector3>();
     private float _dragStartTime = 0f;
     private bool _enableDrag = false;

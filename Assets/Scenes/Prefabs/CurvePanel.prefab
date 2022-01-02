@@ -544,7 +544,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1215735349733786725}
         m_TargetAssemblyTypeName: CurveActions, Assembly-CSharp
-        m_MethodName: OnRotateAction
+        m_MethodName: OnScaleAction
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

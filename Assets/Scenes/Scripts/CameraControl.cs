@@ -24,7 +24,7 @@ public class CameraControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(1) &&
+        if (Input.GetMouseButtonDown(2) &&
             (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             StartMove(SwapYZ(Input.mousePosition));
@@ -33,19 +33,17 @@ public class CameraControl : MonoBehaviour
             //    StartMove(hit.point);
             //}
         }
-        else if (Input.GetMouseButton(1) &&
+        else if (Input.GetMouseButton(2) &&
                  (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             Move(SwapYZ(Input.mousePosition));
             UpdateCamera();
         }
-        else if (Input.GetMouseButtonDown(1) &&
-                 (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
+        else if (Input.GetMouseButtonDown(2))
         {
             StartOrbit(SwapYZ(Input.mousePosition));
         }
-        else if (Input.GetMouseButton(1) &&
-                 (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
+        else if (Input.GetMouseButton(2))
         {
             Orbit(SwapYZ(Input.mousePosition));
             UpdateCamera();

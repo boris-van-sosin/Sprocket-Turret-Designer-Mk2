@@ -23,12 +23,12 @@ public class CurveActions : MonoBehaviour
 
     public void OnRotateAction()
     {
-
+        GeomObjectFactory.GetGeometryManager().StartRotateCurve(_currCrv);
     }
 
     public void OnScaleAction()
     {
-
+        GeomObjectFactory.GetGeometryManager().StartScaleCurve(_currCrv);
     }
 
     public void OnEditAction()

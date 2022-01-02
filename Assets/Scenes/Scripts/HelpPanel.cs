@@ -27,8 +27,8 @@ public class HelpPanel : MonoBehaviour
     }
 
     private static readonly string
-        _defaultHelpText = "Move: shift + right\n" +
-                           "Orbit: ctrl + right";
+        _defaultHelpText = "Move: shift + mid-mouse\n" +
+                           "Orbit: mid-mouse";
 
     private bool _visible;
     private TextMeshProUGUI _textBox;

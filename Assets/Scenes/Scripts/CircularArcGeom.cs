@@ -5,19 +5,27 @@ public class CircularArcGeom : CurveGeomBase
 {
     public override void AppendCtlPt(ControlPoint pt)
     {
-        if (_cltPtsTransforms.Count >= 2)
+        if (_cltPtsTransforms.Count >= 3)
         {
             throw new Exception("Circular arcs have only teo control points and an angle");
         }
         base.AppendCtlPt(pt);
-        if (_cltPtsTransforms.Count == 2)
+        if (_cltPtsTransforms.Count == 3)
         {
-            _innerCrv = new CircularArc<Vector3>(_cltPtsTransforms[0].position, _cltPtsTransforms[1].position, Blend, Magnitude, Rotate);
+            _innerCrv = new CircularArc<Vector3>(_cltPtsTransforms[0].position,
+                                                 _cltPtsTransforms[1].position,
+                                                 AngleFromVectors(_cltPtsTransforms[0].position, _cltPtsTransforms[1].position, _cltPtsTransforms[2].position),
+                                                 Blend, Magnitude, Rotate, AngleFromVectors);
         }
         else
         {
             _innerCrv = null;
         }
+    }
+
+    private float AngleFromVectors(Vector3 start, Vector3 center, Vector3 end)
+    {
+        return Vector3.SignedAngle(start - center, end - center, Vector3.up);
     }
 
     public void SetAngle(float angle)
@@ -33,9 +41,14 @@ public class CircularArcGeom : CurveGeomBase
 
     public override CurveGeomBase Copy()
     {
+        if (_cltPtsTransforms.Count < 3)
+        {
+            throw new Exception("Cannot copy an incomplete circular arc");
+        }
+
         CircularArcGeom copy = GeomObjectFactory.CreateCircularArc();
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             ControlPoint pt = GeomObjectFactory.CreateCtlPt(CtlPts[i].position).GetComponent<ControlPoint>();
             pt.transform.SetParent(copy.transform);
@@ -43,7 +56,10 @@ public class CircularArcGeom : CurveGeomBase
             copy._cltPtsTransforms.Add(pt.transform);
         }
 
-        copy._innerCrv = new CircularArc<Vector3>(_cltPtsTransforms[0].position, _cltPtsTransforms[1].position, Blend, Magnitude, Rotate);
+        copy._innerCrv = new CircularArc<Vector3>(_cltPtsTransforms[0].position,
+                                                 _cltPtsTransforms[1].position,
+                                                 AngleFromVectors(_cltPtsTransforms[0].position, _cltPtsTransforms[1].position, _cltPtsTransforms[2].position),
+                                                 Blend, Magnitude, Rotate, AngleFromVectors);
         copy.SetAngle(_innerCrv.Angle);
 
         return copy;

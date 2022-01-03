@@ -19,6 +19,7 @@ public class ObjectPrototypes : MonoBehaviour
     public LayerActions LayerActionPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
+    public UploadFileReceiver FileReceiver;
     public Transform PreviewObject;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
@@ -110,6 +111,11 @@ public class ObjectPrototypes : MonoBehaviour
     public CameraControl GetCameraControl()
     {
         return CamControl;
+    }
+
+    public UploadFileReceiver GetFileReceiver()
+    {
+        return FileReceiver;
     }
 
     public Transform GetPreviewObject()

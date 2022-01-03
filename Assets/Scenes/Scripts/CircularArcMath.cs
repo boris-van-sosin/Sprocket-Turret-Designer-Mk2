@@ -4,13 +4,15 @@ using UnityEngine;
 
 public class CircularArc<T> : ICurve<T>
 {
-    public CircularArc(T startPt, T centerPt, Func<T, float, T, float, T> belndFunc, Func<T, float> magnitudeFunc, Func<T, float, T> rotateFunc)
+    public CircularArc(T startPt, T centerPt, float angle, Func<T, float, T, float, T> belndFunc, Func<T, float> magnitudeFunc, Func<T, float, T> rotateFunc, Func<T, T, T, float> invRotateFunc)
     {
         Start = startPt;
         Center = centerPt;
         _blendFunc = belndFunc;
         _magnitudeFunc = magnitudeFunc;
         _rotateFunc = rotateFunc;
+        _invRotateFunc = invRotateFunc;
+        Angle = Mathf.Deg2Rad * angle;
     }
 
     public (float, float) Domain => (0f, 1f);
@@ -30,9 +32,11 @@ public class CircularArc<T> : ICurve<T>
             case 1:
                 Center = newPt;
                 break;
-            default:
-                throw new Exception("Circular arc has only two control points");
+            case 3:
+                SetAngle(_invRotateFunc(Start, Center, newPt));
                 break;
+            default:
+                throw new Exception("Circular arc has only three control points");
         }
     }
 
@@ -52,10 +56,19 @@ public class CircularArc<T> : ICurve<T>
     public float Radius => _magnitudeFunc(RadiusVec);
     public T End => Eval(1f);
 
-    public IEnumerable<T> ControlPoints => new List<T>(3) { Start, Center, End };
+    public IEnumerable<T> ControlPoints
+    {
+        get
+        {
+            yield return Start;
+            yield return Center;
+            yield return End;
+        }
+    }
 
     private readonly Func<T, float, T, float, T> _blendFunc;
     private readonly Func<T, float> _magnitudeFunc;
     private readonly Func<T, float, T> _rotateFunc;
+    private readonly Func<T, T, T, float> _invRotateFunc;
 }
 

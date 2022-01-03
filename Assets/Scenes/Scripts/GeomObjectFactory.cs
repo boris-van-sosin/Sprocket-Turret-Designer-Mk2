@@ -93,6 +93,11 @@ public static class GeomObjectFactory
         return _prototypes.GetCameraControl();
     }
 
+    public static UploadFileReceiver GetFileReceiver()
+    {
+        return _prototypes.GetFileReceiver();
+    }
+
     public static Transform GetPreviewObject()
     {
         return _prototypes.GetPreviewObject();

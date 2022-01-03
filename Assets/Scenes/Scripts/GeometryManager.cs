@@ -52,7 +52,7 @@ public class GeometryManager : MonoBehaviour
         {
             _dragStartTime = Time.time;
 
-            if (EventSystem.current.IsPointerOverGameObject())
+            if (_receiveStructureDefHandle != null || _receiveTankBlueprintHandle != null || EventSystem.current.IsPointerOverGameObject())
             {
                 return;
             }
@@ -98,6 +98,11 @@ public class GeometryManager : MonoBehaviour
         }
         else if (Input.GetMouseButton(0))
         {
+            if (_receiveStructureDefHandle != null || _receiveTankBlueprintHandle != null)
+            {
+                return;
+            }
+
             if (_currState == UserActionState.EditCurve)
             {
                 HandleDragCtlPt();
@@ -123,6 +128,12 @@ public class GeometryManager : MonoBehaviour
         {
             _dragStartTime = Time.time;
             _enableDrag = false;
+
+            if (_receiveStructureDefHandle != null || _receiveTankBlueprintHandle != null)
+            {
+                return;
+            }
+
             if (_currState == UserActionState.MoveCtlPtViaTrihedron)
             {
                 HandleFinishMoveCtlPtViaTrihedron();
@@ -820,6 +831,106 @@ public class GeometryManager : MonoBehaviour
         JavascripAdapter.DownloadData(SerializationUtils.Serialize(_layers), "txt", "MyTurret");
     }
 
+    public void UploadStructureDef()
+    {
+        _receiveStructureDefHandle = GeomObjectFactory.GetFileReceiver().StartUploadFile();
+        _receiveStructureDefHandle.OnDataReceived += OnReceiveStructureDef;
+        //Debug.Log("Started receiving structure definition");
+        if (_receiveStructureDefHandle.ReceivedData)
+        {
+            //Debug.Log(string.Format("Receiving structure definition immediately. Success={0} Data={1}", _receiveStructureDefHandle.Success, _receiveStructureDefHandle.Data));
+            OnReceiveStructureDef(_receiveStructureDefHandle.Data, _receiveStructureDefHandle.Success);
+        }
+    }
+
+    private void OnReceiveStructureDef(string structureDefData, bool success)
+    {
+        _receiveStructureDefHandle.OnDataReceived -= OnReceiveStructureDef;
+        try
+        {
+            if (success)
+            {
+                SetStructureFromUpload(structureDefData);
+            }
+        }
+        catch (System.Exception exc)
+        {
+            Debug.LogError(string.Format("Failed to load structure definition. Exception: {0}", exc));
+        }
+        finally
+        {
+            _receiveStructureDefHandle = null;
+        }
+    }
+
+    public void UploadTankDesign()
+    {
+        _receiveTankBlueprintHandle = GeomObjectFactory.GetFileReceiver().StartUploadFile();
+        _receiveTankBlueprintHandle.OnDataReceived += OnReceiveTankDesign;
+        //Debug.Log("Started receiving tank design");
+        if (_receiveStructureDefHandle.ReceivedData)
+        {
+            OnReceiveTankDesign(_receiveTankBlueprintHandle.Data, _receiveTankBlueprintHandle.Success);
+        }
+    }
+
+    private void OnReceiveTankDesign(string tankDesignData, bool success)
+    {
+        _receiveTankBlueprintHandle.OnDataReceived -= OnReceiveTankDesign;
+        _receiveTankBlueprintHandle = null;
+    }
+
+    private void SetStructureFromUpload(string structureDef)
+    {
+        StructureDef def = SerializationUtils.LoadFromJson(structureDef);
+        for (int i = 0; i < _layers.Count; i++)
+        {
+            _layers[i].Clear();
+            if (i != 0)
+            {
+                Destroy(_layers[i].gameObject);
+            }
+        }
+        _layers.RemoveRange(1, _layers.Count - 1);
+
+        for (int i = 0; i < def.Layers.Length; ++i)
+        {
+            PlaneLayer layer;
+            if (i == 0)
+            {
+                layer = _layers[0];
+                layer.Elevation = def.Layers[i].Elevation;
+                _activeLayer = layer;
+                _activeLayer.SetSelected(true);
+            }
+            else
+            {
+                _layers.Add(layer = GeomObjectFactory.CreateLayer(def.Layers[i].Elevation));
+                layer.SetSelected(false);
+            }
+
+            for (int j = 0; j < def.Layers[i].Curves.Length; ++j)
+            {
+                if (def.Layers[i].Curves[j].CurveType == SerializationUtils.SplineCurveString)
+                {
+                    BezierCurveGeom crv = GeomObjectFactory.CreateBezierCurve();
+                    foreach (Vector3 pt in def.Layers[i].Curves[j].Points)
+                    {
+                        ControlPoint ctlPt = GeomObjectFactory.CreateCtlPt(pt).GetComponent<ControlPoint>();
+                        crv.AppendCtlPt(ctlPt);
+                    }
+                    crv.TryRender();
+                    layer.AddCurve(crv);
+                }
+                else if (def.Layers[i].Curves[j].CurveType == SerializationUtils.CircuarArcString)
+                {
+
+                }
+            }
+        }
+        
+    }
+
     private void SetPanelPos(RectTransform rtr, Vector3 rayCastPt)
     {
         Vector3 screenPt = GeomObjectFactory.GetCameraControl().UserCamera.WorldToScreenPoint(rayCastPt);
@@ -863,6 +974,8 @@ public class GeometryManager : MonoBehaviour
     private Trihedron _moveTrihedron = null;
     private int _currCrvPtsLeft = 0;
     private string _currCreatingObject = "";
+    private UploadFileReceiver.DataReceiveHandle _receiveStructureDefHandle = null;
+    private UploadFileReceiver.DataReceiveHandle _receiveTankBlueprintHandle = null;
 
     private List<PlaneLayer> _layers = new List<PlaneLayer>();
     private PlaneLayer _activeLayer = null;

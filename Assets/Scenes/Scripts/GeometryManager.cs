@@ -392,7 +392,18 @@ public class GeometryManager : MonoBehaviour
 
             if (bestHit.HasValue)
             {
-                _currEditingCtlPt.transform.position = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+                Vector3 resPt = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+
+                if (_symmetricMode)
+                {
+                    if (resPt.x < 0f)
+                    {
+                        resPt.x = 0f;
+                    }
+                }
+
+                _currEditingCtlPt.transform.position = resPt;
+
                 if (_moveTrihedron != null)
                 {
                     _moveTrihedron.transform.position = _currEditingCtlPt.transform.position;
@@ -432,7 +443,17 @@ public class GeometryManager : MonoBehaviour
                 resPoint.x = _dragOrigin.x;
                 resPoint.y = _dragOrigin.y;
             }
-            _currEditingCtlPt.transform.position = _dragCtlPtOldPos + resPoint - _dragOrigin;
+
+            Vector3 newPtPos = _dragCtlPtOldPos + resPoint - _dragOrigin;
+            if (_symmetricMode)
+            {
+                if (newPtPos.x < 0f)
+                {
+                    newPtPos.x = 0f;
+                }
+            }
+
+            _currEditingCtlPt.transform.position = newPtPos;
             _moveTrihedron.transform.position = _currEditingCtlPt.transform.position;
             _currSelectedCurve.UpdateControlPoint(_currEditingCtlPt);
             GeomObjectFactory.GetCtlPtEditPanel().UpdateValuesFromCtlPt();
@@ -487,12 +508,33 @@ public class GeometryManager : MonoBehaviour
                 else
                 {
                     Vector3 moveVec = pt - _dragOrigin;
-                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+
+                    bool symmetryFail = false;
+                    if (_symmetricMode)
                     {
-                        _currSelectedCurve.CtlPts[i].position = _transformCurveOrigPts[i] + moveVec;
-                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        float minX = _transformCurveOrigPts[0].x;
+                        foreach (Vector3 origPt in _transformCurveOrigPts)
+                        {
+                            if (origPt.x < minX)
+                            {
+                                minX = origPt.x;
+                            }
+                        }
+                        if (minX + moveVec.x < 0f)
+                        {
+                            moveVec.x = -minX;
+                        }
                     }
-                    _currSelectedCurve.TryRender();
+
+                    if (!symmetryFail)
+                    {
+                        for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                        {
+                            _currSelectedCurve.CtlPts[i].position = _transformCurveOrigPts[i] + moveVec;
+                            _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        }
+                        _currSelectedCurve.TryRender();
+                    }
                 }
             }
             else if (tr == TransformType.Rotate)
@@ -513,12 +555,30 @@ public class GeometryManager : MonoBehaviour
                     Vector3 vec = pt - _scaleRotatePoint;
                     float angle = Vector3.SignedAngle(origVec, vec, Vector3.up);
                     Quaternion q = Quaternion.AngleAxis(angle, Vector3.up);
-                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+
+                    bool symmetryFail = false;
+                    if (_symmetricMode)
                     {
-                        _currSelectedCurve.CtlPts[i].position = (q * (_transformCurveOrigPts[i] - _scaleRotatePoint)) + _scaleRotatePoint;
-                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        float minX = _transformCurveOrigPts[0].x;
+                        foreach (Vector3 origPt in _transformCurveOrigPts)
+                        {
+                            if (((q * (origPt - _scaleRotatePoint)) + _scaleRotatePoint).x < 0f)
+                            {
+                                symmetryFail = true;
+                                break;
+                            }
+                        }
                     }
-                    _currSelectedCurve.TryRender();
+
+                    if (!symmetryFail)
+                    {
+                        for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                        {
+                            _currSelectedCurve.CtlPts[i].position = (q * (_transformCurveOrigPts[i] - _scaleRotatePoint)) + _scaleRotatePoint;
+                            _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        }
+                        _currSelectedCurve.TryRender();
+                    }
                 }
             }
             else if (tr == TransformType.Scale)
@@ -538,12 +598,30 @@ public class GeometryManager : MonoBehaviour
                     Vector3 origVec = _dragOrigin - _scaleRotatePoint;
                     Vector3 vec = pt - _scaleRotatePoint;
                     float factor = Mathf.Sqrt(vec.sqrMagnitude / origVec.sqrMagnitude);
-                    for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+
+                    bool symmetryFail = false;
+                    if (_symmetricMode)
                     {
-                        _currSelectedCurve.CtlPts[i].position = ((_transformCurveOrigPts[i] - _scaleRotatePoint) * factor) + _scaleRotatePoint;
-                        _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        float minX = _transformCurveOrigPts[0].x;
+                        foreach (Vector3 origPt in _transformCurveOrigPts)
+                        {
+                            if ((((origPt - _scaleRotatePoint) * factor) + _scaleRotatePoint).x < 0f)
+                            {
+                                symmetryFail = true;
+                                break;
+                            }
+                        }
                     }
-                    _currSelectedCurve.TryRender();
+
+                    if (!symmetryFail)
+                    {
+                        for (int i = 0; i < _currSelectedCurve.CtlPts.Count; ++i)
+                        {
+                            _currSelectedCurve.CtlPts[i].position = ((_transformCurveOrigPts[i] - _scaleRotatePoint) * factor) + _scaleRotatePoint;
+                            _currSelectedCurve.UpdateControlPoint(_currSelectedCurve.CtlPts[i].GetComponent<ControlPoint>());
+                        }
+                        _currSelectedCurve.TryRender();
+                    }
                 }
             }
         }
@@ -1024,5 +1102,6 @@ public class GeometryManager : MonoBehaviour
     private List<Vector3> _transformCurveOrigPts = new List<Vector3>();
     private float _dragStartTime = 0f;
     private bool _enableDrag = false;
+    private bool _symmetricMode = true;
     private static readonly float _dragDelay = 0.5f;
 }

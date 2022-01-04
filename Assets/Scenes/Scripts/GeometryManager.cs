@@ -168,7 +168,7 @@ public class GeometryManager : MonoBehaviour
                 {
                     ControlPoint hitCtlpt;
                     LayerAxis hitAxis;
-                    PlaneLayer hitLayer;
+                    LayerPlane hitLayer;
                     if ((hitCtlpt = hit.collider.GetComponent<ControlPoint>()) != null && _activeLayer.ContainsCtlPt(hitCtlpt))
                     {
                         snapCtlPt = hitCtlpt;
@@ -179,7 +179,7 @@ public class GeometryManager : MonoBehaviour
                         snapAxis = hitAxis;
                         bestHit = hit;
                     }
-                    else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+                    else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) == _activeLayer)
                     {
                         bestHit = hit;
                     }
@@ -226,11 +226,11 @@ public class GeometryManager : MonoBehaviour
         Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.CurvesLayerMask | GlobalData.ControlPtsLayerMask | GlobalData.GizmosLayerMask);
         bool selectedCrv = false;
-        PlaneLayer bestHitLayer = null;
+        LayerPlane bestHitLayer = null;
         foreach (RaycastHit hit in hits)
         {
             CurveGeomBase hitCrv;
-            PlaneLayer hitLayer;
+            LayerPlane hitLayer;
             if ((hitCrv = hit.collider.GetComponentInParent<CurveGeomBase>()) != null &&
                 _activeLayer.ContainsCurve(hitCrv))
             {
@@ -260,7 +260,7 @@ public class GeometryManager : MonoBehaviour
                 selectedCrv = true;
                 break; //TODO: verify this
             }
-            else if ((hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) != null)
+            else if ((hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) != null)
             {
                 bestHitLayer = hitLayer;
             }
@@ -373,7 +373,7 @@ public class GeometryManager : MonoBehaviour
             {
                 ControlPoint hitCtlPt;
                 LayerAxis hitAxis;
-                PlaneLayer hitLayer;
+                LayerPlane hitLayer;
                 if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt && _activeLayer.ContainsCtlPt(hitCtlPt))
                 {
                     snapCtlPt = hitCtlPt;
@@ -384,7 +384,7 @@ public class GeometryManager : MonoBehaviour
                     snapAxis = hitAxis;
                     bestHit = hit;
                 }
-                else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+                else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) == _activeLayer)
                 {
                     bestHit = hit;
                 }
@@ -409,8 +409,8 @@ public class GeometryManager : MonoBehaviour
         LayerAxis snapAxis = null;
         foreach (RaycastHit hit in hits)
         {
-            PlaneLayer hitLayer;
-            if ((hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+            LayerPlane hitLayer;
+            if ((hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) == _activeLayer)
             {
                 bestHit = hit;
             }
@@ -452,7 +452,7 @@ public class GeometryManager : MonoBehaviour
         {
             ControlPoint hitCtlPt;
             LayerAxis hitAxis;
-            PlaneLayer hitLayer;
+            LayerPlane hitLayer;
             if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt && _activeLayer.ContainsCtlPt(hitCtlPt))
             {
                 snapCtlPt = hitCtlPt;
@@ -463,7 +463,7 @@ public class GeometryManager : MonoBehaviour
                 snapAxis = hitAxis;
                 bestHit = hit;
             }
-            else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<PlaneLayer>()) == _activeLayer)
+            else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) == _activeLayer)
             {
                 bestHit = hit;
             }
@@ -676,6 +676,36 @@ public class GeometryManager : MonoBehaviour
         _currState = UserActionState.Default;
     }
 
+    public void MirrorCurve(CurveGeomBase crv)
+    {
+        if (crv != _currSelectedCurve)
+        {
+            Debug.LogWarning("Started editing curve other than selected curve");
+        }
+
+        float minX = _currSelectedCurve.CtlPts[0].position.x,
+            maxX = _currSelectedCurve.CtlPts[0].position.x;
+        foreach (Transform pt in _currSelectedCurve.CtlPts)
+        {
+            if (pt.position.x < minX)
+            {
+                minX = pt.position.x;
+            }
+            if (pt.position.x > maxX)
+            {
+                maxX = pt.position.x;
+            }
+        }
+
+        float mirrorX = minX + maxX;
+        foreach (Transform pt in _currSelectedCurve.CtlPts)
+        {
+            pt.position = new Vector3(mirrorX - pt.position.x, pt.position.y, pt.position.z);
+            _currSelectedCurve.UpdateControlPoint(pt.GetComponent<ControlPoint>());
+        }
+        _currSelectedCurve.TryRender();
+    }
+
     public void CreateEmptyLayer()
     {
         if (_layers.Count == 0)
@@ -701,7 +731,7 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
-    public void StartScaleLayer(PlaneLayer l)
+    public void StartScaleLayer(LayerPlane l)
     {
         if (l != _activeLayer)
         {
@@ -725,7 +755,7 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
-    public void DuplicateLayer(PlaneLayer l)
+    public void DuplicateLayer(LayerPlane l)
     {
         if (l != _activeLayer)
         {
@@ -742,7 +772,7 @@ public class GeometryManager : MonoBehaviour
         }
 
         _activeLayer.SetSelected(false);
-        PlaneLayer nextLayer = _activeLayer.Duplicate(maxH + 0.1f);
+        LayerPlane nextLayer = _activeLayer.Duplicate(maxH + 0.1f);
         nextLayer.SetSelected(true);
         GeomObjectFactory.GetLayerActionPanel().AttachLayer(nextLayer);
         _layers.Add(nextLayer);
@@ -750,7 +780,7 @@ public class GeometryManager : MonoBehaviour
         _currState = UserActionState.Default;
     }
 
-    public void ClearLayer(PlaneLayer l)
+    public void ClearLayer(LayerPlane l)
     {
         if (l != _activeLayer)
         {
@@ -761,7 +791,7 @@ public class GeometryManager : MonoBehaviour
         _currState = UserActionState.Default;
     }
 
-    public void DeleteLayer(PlaneLayer l)
+    public void DeleteLayer(LayerPlane l)
     {
         if (l != _activeLayer)
         {
@@ -776,7 +806,7 @@ public class GeometryManager : MonoBehaviour
 
         _activeLayer.Clear();
         _activeLayer.SetSelected(false);
-        PlaneLayer toDelete = _activeLayer;
+        LayerPlane toDelete = _activeLayer;
 
         int activeIdx = _layers.IndexOf(_activeLayer);
         if (activeIdx < 0)
@@ -882,6 +912,9 @@ public class GeometryManager : MonoBehaviour
 
     private void SetStructureFromUpload(string structureDef)
     {
+        GeomObjectFactory.GetLayerActionPanel().Release();
+        GeomObjectFactory.GetCtlPtEditPanel().Release();
+
         StructureDef def = SerializationUtils.LoadFromJson(structureDef);
         for (int i = 0; i < _layers.Count; i++)
         {
@@ -895,7 +928,7 @@ public class GeometryManager : MonoBehaviour
 
         for (int i = 0; i < def.Layers.Length; ++i)
         {
-            PlaneLayer layer;
+            LayerPlane layer;
             if (i == 0)
             {
                 layer = _layers[0];
@@ -977,8 +1010,8 @@ public class GeometryManager : MonoBehaviour
     private UploadFileReceiver.DataReceiveHandle _receiveStructureDefHandle = null;
     private UploadFileReceiver.DataReceiveHandle _receiveTankBlueprintHandle = null;
 
-    private List<PlaneLayer> _layers = new List<PlaneLayer>();
-    private PlaneLayer _activeLayer = null;
+    private List<LayerPlane> _layers = new List<LayerPlane>();
+    private LayerPlane _activeLayer = null;
 
     private Axis _dragAxis;
     private Vector3 _dragOrigin;

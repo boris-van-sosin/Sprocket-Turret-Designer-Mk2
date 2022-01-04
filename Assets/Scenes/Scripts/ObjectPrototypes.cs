@@ -7,7 +7,7 @@ public class ObjectPrototypes : MonoBehaviour
     public GeometryManager GeomManager;
     public Transform CtlPtPrototype;
     public LineRenderer CtlMeshPolylinePrototype;
-    public PlaneLayer LayerPrototype;
+    public LayerPlane LayerPrototype;
     public BezierCurveGeom BezierPrototype;
     public BSplineCurveGeom BSplinePrototype;
     public CircularArcGeom CircularArcPrototype;
@@ -19,6 +19,7 @@ public class ObjectPrototypes : MonoBehaviour
     public LayerActions LayerActionPanel;
     public HelpPanel HelpTextPanel;
     public CameraControl CamControl;
+    public UIRadioGroup CameraModeToggle;
     public UploadFileReceiver FileReceiver;
     public Transform PreviewObject;
     public Material CurveMtlDefault;
@@ -68,7 +69,7 @@ public class ObjectPrototypes : MonoBehaviour
         return Instantiate(CircularArcPrototype);
     }
 
-    public PlaneLayer CreateLayer(float elevation)
+    public LayerPlane CreateLayer(float elevation)
     {
         return Instantiate(LayerPrototype, new Vector3(0f, elevation, 0f), Quaternion.identity);
     }
@@ -111,6 +112,11 @@ public class ObjectPrototypes : MonoBehaviour
     public CameraControl GetCameraControl()
     {
         return CamControl;
+    }
+
+    public UIRadioGroup GetCameraModeToggle()
+    {
+        return CameraModeToggle;
     }
 
     public UploadFileReceiver GetFileReceiver()

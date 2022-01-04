@@ -47,7 +47,7 @@ public static class GeomObjectFactory
         return coll;
     }
 
-    public static PlaneLayer CreateLayer(float elevation)
+    public static LayerPlane CreateLayer(float elevation)
     {
         return _prototypes.CreateLayer(elevation);
     }
@@ -91,6 +91,11 @@ public static class GeomObjectFactory
     public static CameraControl GetCameraControl()
     {
         return _prototypes.GetCameraControl();
+    }
+
+    public static UIRadioGroup GetCameraModeToggle()
+    {
+        return _prototypes.GetCameraModeToggle();
     }
 
     public static UploadFileReceiver GetFileReceiver()

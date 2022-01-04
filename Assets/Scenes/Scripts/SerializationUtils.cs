@@ -5,7 +5,7 @@ using System;
 
 public static class SerializationUtils
 {
-    public static string Serialize(IEnumerable<PlaneLayer> layers)
+    public static string Serialize(IEnumerable<LayerPlane> layers)
     {
         StructureDef structure = new StructureDef()
         {
@@ -40,7 +40,7 @@ public static class SerializationUtils
         throw new NotSupportedException("Only Bezier and circular curves are supported.");
     }
 
-    private static LayerDef PrepLayer(PlaneLayer layer)
+    private static LayerDef PrepLayer(LayerPlane layer)
     {
         return new LayerDef()
         {

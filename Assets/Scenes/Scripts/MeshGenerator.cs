@@ -6,7 +6,7 @@ using System;
 
 public static class MeshGenerator
 {
-    public static QuadMesh GenerateQuadMesh(List<PlaneLayer> layers, int samplesPerCurvedSeg)
+    public static QuadMesh GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
         ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg);
 
@@ -153,7 +153,7 @@ public static class MeshGenerator
         return quads;
     }
 
-    public static HexMesh GenerateHexMesh(List<PlaneLayer> layers, int samplesPerCurvedSeg)
+    public static HexMesh GenerateHexMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
         ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg);
 
@@ -576,11 +576,11 @@ public static class MeshGenerator
         return new List<float>(samplePts);
     }
 
-    private static ProcessedCurves ProcessAndSampleCurves(List<PlaneLayer> layers, int samplesPerCurvedSeg)
+    private static ProcessedCurves ProcessAndSampleCurves(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
         int maxOrder = 0;
         List<RawCurveChain> rawChains = new List<RawCurveChain>();
-        foreach (PlaneLayer l in layers.OrderBy(t => t.Elevation))
+        foreach (LayerPlane l in layers.OrderBy(t => t.Elevation))
         {
             List<ValueTuple<CurveGeomBase, bool>> crvs = l.GetConnectedChain();
             List<BezierCurve<Vector3>> currChain = new List<BezierCurve<Vector3>>(crvs.Count);
@@ -813,9 +813,9 @@ public static class MeshGenerator
         public List<Hex> Hexes { get; set; }
     }
 
-    private class LayerComparer : IComparer<PlaneLayer>
+    private class LayerComparer : IComparer<LayerPlane>
     {
-        public int Compare(PlaneLayer x, PlaneLayer y)
+        public int Compare(LayerPlane x, LayerPlane y)
         {
             if (Mathf.Abs(x.Elevation - y.Elevation) < Mathf.Epsilon)
             {

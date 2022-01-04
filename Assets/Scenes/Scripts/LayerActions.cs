@@ -9,7 +9,7 @@ public class LayerActions : MonoBehaviour
         ElevationTextBox.onValueChanged.AddListener(new UnityEngine.Events.UnityAction<string>(SetElevation));
     }
 
-    public void AttachLayer(PlaneLayer l)
+    public void AttachLayer(LayerPlane l)
     {
         _attachedLayer = l;
         ElevationTextBox.SetTextWithoutNotify(_attachedLayer.Elevation.ToString());
@@ -47,6 +47,6 @@ public class LayerActions : MonoBehaviour
         _attachedLayer.Elevation = float.Parse(elevationStr);
     }
 
-    private PlaneLayer _attachedLayer = null;
+    private LayerPlane _attachedLayer = null;
     public TMPro.TMP_InputField ElevationTextBox;
 }

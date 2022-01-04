@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class LayerAxis : MonoBehaviour
 {
-    public PlaneLayer ContainingLayer;
+    public LayerPlane ContainingLayer;
 }

@@ -31,6 +31,11 @@ public class CurveActions : MonoBehaviour
         GeomObjectFactory.GetGeometryManager().StartScaleCurve(_currCrv);
     }
 
+    public void OnMirrorAction()
+    {
+        GeomObjectFactory.GetGeometryManager().MirrorCurve(_currCrv);
+    }
+
     public void OnEditAction()
     {
         GeomObjectFactory.GetGeometryManager().StartEditCurve(_currCrv);

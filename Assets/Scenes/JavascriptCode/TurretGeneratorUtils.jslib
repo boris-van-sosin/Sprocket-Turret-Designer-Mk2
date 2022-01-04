@@ -15,6 +15,27 @@ DownloadStringAsFile : function (text, fileType, fileName)
 		setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
 	},
 
+SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
+	{
+		let tankObj = JSON.parse(UTF8ToString(fileName));
+		for (let i in tankObj.blueprints)
+		{
+			if (tankObj.blueprints[i].id == "Compartment")
+			{
+				let compartmentData = JSON.parse(tankObj.blueprints[i].data);
+				if (compartmentData.name == "Turret 1")
+				{
+					
+				}
+			}
+		}
+	},
+
+SetTurretGeometry: function (turretObj, turretData_stringPtr)
+	{
+		console.log("Will set turret data for turret object " + turretObj);
+	},
+
 
 /*
  * The function GetFileFromBrowser was adapted with modifications from Gregg Tavares's getuserimage-unity-webgl project, as permitted by its copyright notice.

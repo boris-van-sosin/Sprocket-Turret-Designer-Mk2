@@ -393,6 +393,10 @@ public class GeometryManager : MonoBehaviour
             if (bestHit.HasValue)
             {
                 _currEditingCtlPt.transform.position = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+                if (_moveTrihedron != null)
+                {
+                    _moveTrihedron.transform.position = _currEditingCtlPt.transform.position;
+                }
                 _currSelectedCurve.UpdateControlPoint(_currEditingCtlPt);
                 GeomObjectFactory.GetCtlPtEditPanel().UpdateValuesFromCtlPt();
                 _currSelectedCurve.TryRender();

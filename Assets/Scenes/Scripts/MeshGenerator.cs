@@ -15,7 +15,9 @@ public static class MeshGenerator
         QuadMesh quads = new QuadMesh()
         {
             Vertices = new List<Vector3>(processed.FrontSamplePoints.Count + processed.SideSamplePoints.Count + processed.RearSamplePoints.Count),
-            Quads = new List<(int, int, int, int)>((processed.FrontSamplePoints.Count + processed.SideSamplePoints.Count + processed.RearSamplePoints.Count) * 4)
+            Quads = new List<(int, int, int, int)>((processed.FrontSamplePoints.Count + processed.SideSamplePoints.Count + processed.RearSamplePoints.Count) * 4),
+            FloorVertices = new List<int>(processed.FrontSamplePoints.Count),
+            RoofVertices = new List<int>(processed.FrontSamplePoints.Count),
         };
         int vertexIdx = 0, currlayerBase = 0, lastLayerBase = 0;
         for (int i = 0; i < processed.NumLayers; ++i)
@@ -29,6 +31,15 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
+
+                    if (i == 0)
+                    {
+                        quads.FloorVertices.Add(vertexIdx);
+                    }
+                    else if (i == processed.NumLayers - 1)
+                    {
+                        quads.RoofVertices.Add(vertexIdx);
+                    }
 
                     if (layerVertexIdx > 0)
                     {
@@ -68,6 +79,15 @@ public static class MeshGenerator
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
 
+                    if (i == 0)
+                    {
+                        quads.FloorVertices.Add(vertexIdx);
+                    }
+                    else if (i == processed.NumLayers - 1)
+                    {
+                        quads.RoofVertices.Add(vertexIdx);
+                    }
+
                     if (layerVertexIdx > 0)
                     {
                         edges.Add((vertexIdx - 1, vertexIdx));
@@ -106,6 +126,15 @@ public static class MeshGenerator
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
 
+                    if (i == 0)
+                    {
+                        quads.FloorVertices.Add(vertexIdx);
+                    }
+                    else if (i == processed.NumLayers - 1)
+                    {
+                        quads.RoofVertices.Add(vertexIdx);
+                    }
+
                     if (layerVertexIdx > 0)
                     {
                         edges.Add((vertexIdx - 1, vertexIdx));
@@ -142,8 +171,12 @@ public static class MeshGenerator
         Vector3[] mirroredVertices = quads.Vertices.Select(v => new Vector3(-v.x, v.y, v.z)).ToArray();
         (int, int, int, int)[] mirroredQuads = quads.Quads.Select(q => (q.Item4 + numVertices, q.Item3 + numVertices, q.Item2 + numVertices, q.Item1 + numVertices)).ToArray();
         (int, int)[] mirroredEdges = edges.Select(e => (e.Item2 + numVertices, e.Item1 + numVertices)).ToArray();
+        int[] mirroredFloor = quads.FloorVertices.Select(i => i + numVertices).ToArray();
+        int[] mirroredRoof = quads.RoofVertices.Select(i => i + numVertices).ToArray();
         quads.Vertices.AddRange(mirroredVertices);
         quads.Quads.AddRange(mirroredQuads);
+        quads.FloorVertices.AddRange(mirroredFloor);
+        quads.RoofVertices.AddRange(mirroredRoof);
         edges.AddRange(mirroredEdges);
 
         quads.MeshSize = (quads.Vertices.Count / processed.NumLayers, processed.NumLayers);
@@ -583,6 +616,10 @@ public static class MeshGenerator
         foreach (LayerPlane l in layers.OrderBy(t => t.Elevation))
         {
             List<ValueTuple<CurveGeomBase, bool>> crvs = l.GetConnectedChain();
+            if (crvs.Count == 0)
+            {
+                continue;
+            }
             List<BezierCurve<Vector3>> currChain = new List<BezierCurve<Vector3>>(crvs.Count);
             foreach (ValueTuple<CurveGeomBase, bool> crv in crvs)
             {
@@ -612,6 +649,11 @@ public static class MeshGenerator
             }
 
             rawChains.Add(new RawCurveChain() { Curves = currChain, Elevation = l.Elevation });
+        }
+
+        if (rawChains.Count < 2)
+        {
+            throw new Exception("Fewer than two layers with a fully connected chain.");
         }
 
         /*
@@ -653,7 +695,14 @@ public static class MeshGenerator
     {
         Mesh m = new Mesh();
         m.Clear();
-        m.SetVertices(quads.Vertices);
+        Vector3[] vertices = new Vector3[quads.Vertices.Count + 2];
+        for (int i = 0; i < quads.Vertices.Count; ++i)
+        {
+            vertices[i] = quads.Vertices[i];
+        }
+        vertices[quads.Vertices.Count] = new Vector3(0f, quads.Vertices[quads.FloorVertices[0]].y, 0f);
+        vertices[quads.Vertices.Count + 1] = new Vector3(0f, quads.Vertices[quads.RoofVertices[0]].y, 0f);
+        m.SetVertices(vertices);
         List<int> triangles = new List<int>(quads.Quads.Count * 6);
 
         foreach (var q in quads.Quads)
@@ -666,9 +715,42 @@ public static class MeshGenerator
             triangles.Add(q.Item3);
             triangles.Add(q.Item4);
         }
+
+        for (int i = 0; i < quads.FloorVertices.Count; ++i)
+        {
+            if (i < quads.FloorVertices.Count / 2)
+            {
+                triangles.Add(quads.FloorVertices[(i + 1) % quads.FloorVertices.Count]);
+                triangles.Add(quads.FloorVertices[i]);
+                triangles.Add(quads.Vertices.Count);
+            }
+            else
+            {
+                triangles.Add(quads.FloorVertices[i]);
+                triangles.Add(quads.FloorVertices[(i + 1) % quads.FloorVertices.Count]);
+                triangles.Add(quads.Vertices.Count);
+            }
+        }
+
+        for (int i = 0; i < quads.RoofVertices.Count; ++i)
+        {
+            if (i < quads.RoofVertices.Count / 2)
+            {
+                triangles.Add(quads.RoofVertices[i]);
+                triangles.Add(quads.RoofVertices[(i + 1) % quads.RoofVertices.Count]);
+                triangles.Add(quads.Vertices.Count + 1);
+            }
+            else
+            {
+                triangles.Add(quads.RoofVertices[(i + 1) % quads.RoofVertices.Count]);
+                triangles.Add(quads.RoofVertices[i]);
+                triangles.Add(quads.Vertices.Count + 1);
+            }
+        }
+
         m.SetTriangles(triangles, 0, true);
 
-        Vector2[] uvs = new Vector2[quads.Vertices.Count];
+        Vector2[] uvs = new Vector2[quads.Vertices.Count + 2];
         int idx = 0;
         for (int i = 0; i < quads.MeshSize.Item1; ++i)
         {
@@ -677,6 +759,7 @@ public static class MeshGenerator
                 uvs[idx] = new Vector2(((float)i) / quads.MeshSize.Item1, ((float)j) / quads.MeshSize.Item2);
             }
         }
+        uvs[quads.Vertices.Count] = uvs[quads.Vertices.Count + 1] = Vector2.zero;
         m.uv = uvs;
 
         m.UploadMeshData(true);
@@ -796,6 +879,8 @@ public static class MeshGenerator
     {
         public (int, int) MeshSize { get; set; }
         public List<Vector3> Vertices { get; set; }
+        public List<int> FloorVertices { get; set; }
+        public List<int> RoofVertices { get; set; }
         public List<ValueTuple<int, int, int, int>> Quads { get; set; }
     }
 

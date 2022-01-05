@@ -14,6 +14,7 @@ public class UploadFileReceiver : MonoBehaviour
         Debug.Log(string.Format("Current working directory: {0}", System.IO.Directory.GetCurrentDirectory()));
         handle.ReceiveData(System.IO.File.ReadAllText("C:\\Users\\boris\\Downloads\\MyTurret.txt"));        
 #endif
+        Debug.Log(string.Format("Requested upload with task id {0}", id));
         _tasks[id] = handle;
         ++_taskCounter;
         return handle;
@@ -21,10 +22,11 @@ public class UploadFileReceiver : MonoBehaviour
 
     public void ReceiveData(string data)
     {
-        //Debug.Log("Received data");
-        //Debug.Log(data);
+        Debug.Log("Received data");
+        Debug.Log(data);
         UploadResponseData reponse = JsonUtility.FromJson<UploadResponseData>(data);
         string taskId = reponse.Id;
+        Debug.Log(string.Format("Got upload with task id {0}", taskId));
         if (reponse.Success)
         {
             _tasks[taskId].ReceiveData(reponse.Data);
@@ -76,5 +78,5 @@ public class UploadFileReceiver : MonoBehaviour
 
     private Dictionary<string, DataReceiveHandle> _tasks = new Dictionary<string, DataReceiveHandle>();
 
-    private static int _taskCounter = 0;
+    private int _taskCounter = 0;
 }

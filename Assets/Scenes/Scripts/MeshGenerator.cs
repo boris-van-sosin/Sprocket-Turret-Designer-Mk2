@@ -8,7 +8,7 @@ public static class MeshGenerator
 {
     public static QuadMesh GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
-        return GenerateQuadMesh(layers, samplesPerCurvedSeg, true, 10, 10, 10, 10, 10).Item1;
+        return GenerateQuadMesh(layers, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
     }
 
     public static (QuadMesh, StructureExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
@@ -198,7 +198,7 @@ public static class MeshGenerator
 
         GeomObjectFactory.GetGeometryManager().AssignGizmos(edges.Select(e => (quads.Vertices[e.Item1], quads.Vertices[e.Item2], UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))), quads.Vertices.Select(v => (v, UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))));
 
-        StructureExportData exportData = forExport ? AssignToExportData(quads, processed.NumLayers, thicknessMap) : null;
+        StructureExportData exportData = forExport ? AssignToExportData2(quads, processed.NumLayers, thicknessMap) : null;
         return (quads, exportData);
     }
 
@@ -998,6 +998,111 @@ public static class MeshGenerator
                 exportData.Dups[k++].Array = new int[] { i + halfPoints };
             }
         }
+
+        string jsonData = JsonUtility.ToJson(exportData);
+
+        return exportData;
+    }
+
+    private static StructureExportData AssignToExportData2(QuadMesh quads, int numLayers, List<int> thicknessMap)
+    {
+        List<Vector3> vertices = new List<Vector3>(quads.Quads.Count * 4);
+        IntArrayContainer[] faces = new IntArrayContainer[quads.Quads.Count];
+        int[] expandedThicknessMap = new int[quads.Quads.Count * 4];
+        List<List<int>> dups = new List<List<int>>(quads.Quads.Count * 4);
+        int vertexIdx = 0;
+        for (int i = 0; i < quads.Quads.Count; ++i)
+        {
+            vertices.Add(quads.Vertices[quads.Quads[i].Item1]);
+            vertices.Add(quads.Vertices[quads.Quads[i].Item2]);
+            vertices.Add(quads.Vertices[quads.Quads[i].Item3]);
+            vertices.Add(quads.Vertices[quads.Quads[i].Item4]);
+
+            int[] currFace = new int[]
+            {
+                quads.Quads[i].Item1,
+                quads.Quads[i].Item2,
+                quads.Quads[i].Item3,
+
+                quads.Quads[i].Item1,
+                quads.Quads[i].Item3,
+                quads.Quads[i].Item4
+            };
+            faces[i] = new IntArrayContainer() { Array = currFace };
+            vertexIdx += 4;
+        }
+
+
+        int verticesPerLayer = quads.Vertices.Count / numLayers,
+            ptIdx = 0,
+            halfPoints = quads.Vertices.Count / 2,
+            halfLayer = verticesPerLayer / 2,
+            k = 0;
+        bool nextStartOfLayer = true;
+
+        for (int i = 0; i < halfPoints; ++i)
+        {
+            if (i == ptIdx)
+            {
+                if (ptIdx + halfPoints >= quads.Vertices.Count)
+                {
+                    continue;
+                }
+
+                Vector3
+                    pt1 = quads.Vertices[ptIdx],
+                    pt2 = quads.Vertices[ptIdx + halfPoints];
+                if (pt1 != pt2)
+                {
+                    Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
+                }
+
+                List<int> currDups = new List<int>(4);
+                for (int j = 0; j < vertices.Count; ++j)
+                {
+                    if (quads.Vertices[ptIdx] == vertices[j])
+                    {
+                        currDups.Add(j);
+                        expandedThicknessMap[j] = thicknessMap[ptIdx];
+                    }
+                }
+                dups.Add(currDups);
+
+                if (nextStartOfLayer)
+                {
+                    ptIdx += halfLayer - 1;
+                }
+                else
+                {
+                    ptIdx += 1;
+                }
+                nextStartOfLayer = !nextStartOfLayer;
+            }
+            else
+            {
+                for (int m = 0; m <= halfPoints; m += halfPoints)
+                {
+                    List<int> currDups = new List<int>(4);
+                    for (int j = 0; j < vertices.Count; ++j)
+                    {
+                        if (quads.Vertices[i + m] == vertices[j])
+                        {
+                            currDups.Add(j);
+                            expandedThicknessMap[j] = thicknessMap[i + m];
+                        }
+                    }
+                    dups.Add(currDups);
+                }
+            }
+        }
+
+        StructureExportData exportData = new StructureExportData()
+        {
+            Vertices = vertices.ToArray(),
+            Faces = faces,
+            ThicknessMap = thicknessMap.ToArray(),
+            Dups = dups.Select(dl => new IntArrayContainer() { Array = dl.ToArray() }).ToArray()
+        };
 
         string jsonData = JsonUtility.ToJson(exportData);
 

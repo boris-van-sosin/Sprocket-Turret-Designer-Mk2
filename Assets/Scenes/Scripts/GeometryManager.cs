@@ -1015,7 +1015,7 @@ public class GeometryManager : MonoBehaviour
     {
         _receiveTankBlueprintHandle = GeomObjectFactory.GetFileReceiver().StartUploadFile();
         _receiveTankBlueprintHandle.OnDataReceived += OnReceiveTankDesign;
-        //Debug.Log("Started receiving tank design");
+        Debug.Log("Started receiving tank design");
         if (_receiveTankBlueprintHandle.ReceivedData)
         {
             OnReceiveTankDesign(_receiveTankBlueprintHandle.Data, _receiveTankBlueprintHandle.Success);
@@ -1024,9 +1024,13 @@ public class GeometryManager : MonoBehaviour
 
     private void OnReceiveTankDesign(string tankDesignData, bool success)
     {
+        Debug.Log("In OnReceiveTankDesign");
         _receiveTankBlueprintHandle.OnDataReceived -= OnReceiveTankDesign;
         _tankData = tankDesignData;
+        Debug.Log("set tankDesignData to");
+        Debug.Log(string.Format("{0}",_tankData));
         GeomObjectFactory.GetUploadedDesignImage().gameObject.SetActive(_tankData != null);
+        Debug.Log("set image");
         _receiveTankBlueprintHandle = null;
     }
 

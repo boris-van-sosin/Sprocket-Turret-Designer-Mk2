@@ -12,9 +12,9 @@ public class UploadFileReceiver : MonoBehaviour
         JavascripAdapter.RequestUploadFile(name, "ReceiveData", id);
 #else
         Debug.Log(string.Format("Current working directory: {0}", System.IO.Directory.GetCurrentDirectory()));
-        handle.ReceiveData(System.IO.File.ReadAllText("C:\\Users\\boris\\Downloads\\MyTurret.txt"));        
+        handle.ReceiveData(System.IO.File.ReadAllText("C:\\Users\\boris\\Downloads\\MyTurret (1).txt"));        
 #endif
-        Debug.Log(string.Format("Requested upload with task id {0}", id));
+        //Debug.Log(string.Format("Requested upload with task id {0}", id));
         _tasks[id] = handle;
         ++_taskCounter;
         return handle;
@@ -22,11 +22,11 @@ public class UploadFileReceiver : MonoBehaviour
 
     public void ReceiveData(string data)
     {
-        Debug.Log("Received data");
-        Debug.Log(data);
+        //Debug.Log("Received data");
+        //Debug.Log(data);
         UploadResponseData reponse = JsonUtility.FromJson<UploadResponseData>(data);
         string taskId = reponse.Id;
-        Debug.Log(string.Format("Got upload with task id {0}", taskId));
+        //Debug.Log(string.Format("Got upload with task id {0}", taskId));
         if (reponse.Success)
         {
             _tasks[taskId].ReceiveData(reponse.Data);

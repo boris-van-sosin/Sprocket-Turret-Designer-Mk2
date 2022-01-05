@@ -1,4 +1,3 @@
-
 mergeInto(LibraryManager.library, {
 DownloadStringAsFile : function (text, fileType, fileName)
 	{
@@ -32,32 +31,46 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 		}
 		
 		let fileName = tankObj.name + "_withTurret.blueprint";
-		DownloadStringAsFile(JSON.stringify(tankObj, null, 2), "text/json", );
-	},
-
-SetTurretGeometry: function (turretObj, turretData_stringPtr)
-	{
-		console.log("Will set turret data for turret object " + turretObj);
-		let turretDataObj = JSON.parse(UTF8ToString(turretData_stringPtr));
 		
-		let vertices = new Array(turretDataObj.Vertices.length * 3);
-		for (let i in turretDataObj.Vertices)
+		// Copy of DownloadStringAsFile, because JavaScript is stupid like this.
 		{
-			vertices[i * 3 + 0] = turretDataObj.Vertices[i].x;
-			vertices[i * 3 + 1] = turretDataObj.Vertices[i].y;
-			vertices[i * 3 + 2] = turretDataObj.Vertices[i].z;
+			let blob = new Blob([JSON.stringify(tankObj, null, 2)], { type: "text/json" });
+			
+			let a = document.createElement('a');
+			a.download = fileName;
+			a.href = URL.createObjectURL(blob);
+			a.dataset.downloadurl = ["text/json", a.download, a.href].join(':');
+			a.style.display = "none";
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
 		}
 		
-		let dups = turretDataObj.Dups.slice();
-		let thicknessMap = turretDataObj.Dups.slice();
-		let faces = turretDataObj.Dups.slice();
-		
-		turretObj.compartment.points = vertices;
-		turretObj.compartment.sharedPoints = dups;
-		turretObj.compartment.thicknessMap = thicknessMap;
-		turretObj.compartment.faceMap = faces;
+		function SetTurretGeometry(turretObj, turretData_stringPtr)
+		{
+			let turretDataObj = JSON.parse(UTF8ToString(turretData_stringPtr));
+			console.log("Will set turret data:");
+			console.log(turretDataObj);
+			
+			let vertices = new Array(turretDataObj.Vertices.length * 3);
+			for (let i in turretDataObj.Vertices)
+			{
+				vertices[i * 3 + 0] = turretDataObj.Vertices[i].x;
+				vertices[i * 3 + 1] = turretDataObj.Vertices[i].y;
+				vertices[i * 3 + 2] = turretDataObj.Vertices[i].z;
+			}
+			
+			let dups = turretDataObj.Dups.slice();
+			let thicknessMap = turretDataObj.ThicknessMap.slice();
+			let faces = turretDataObj.Faces.slice();
+			
+			turretObj.compartment.points = vertices;
+			turretObj.compartment.sharedPoints = dups;
+			turretObj.compartment.thicknessMap = thicknessMap;
+			turretObj.compartment.faceMap = faces;
+		}
 	},
-
 
 /*
  * The function GetFileFromBrowser was adapted with modifications from Gregg Tavares's getuserimage-unity-webgl project, as permitted by its copyright notice.
@@ -116,7 +129,10 @@ GetFileFromBrowser: function(objectNamePtr, funcNamePtr, taskIdPtr)
 		var objectName = UTF8ToString(objectNamePtr);
 		var funcName = UTF8ToString(funcNamePtr);
 		var taskId = UTF8ToString(taskIdPtr);
-
+		console.log("In JavaScript. taskId=" + taskId);
+		
+		g.taskId = taskId;
+		
 		if (!g.initialized)
 		{
 			g.initialized = true;
@@ -201,7 +217,9 @@ GetFileFromBrowser: function(objectNamePtr, funcNamePtr, taskIdPtr)
 		function HandleCancel(evt) {
 			evt.stopPropagation();
 			evt.preventDefault();
-			sendError("cancelled");
+			sendError(g.taskId, "cancelled");
+			g.busy = false;
+			hide();
 		}
 		
 		function LoadFile(evt) {
@@ -214,9 +232,10 @@ GetFileFromBrowser: function(objectNamePtr, funcNamePtr, taskIdPtr)
 			let file = fileInput[0];
 			let reader = new FileReader();
 
+			console.log("In LoadFile. taskId=" + g.taskId);
 			reader.addEventListener("load", () => {
 				// send the uploaded text
-				sendResult(reader.result);
+				sendResult(g.taskId, reader.result);
 			}, false);
 
 			if (file) {
@@ -228,13 +247,14 @@ GetFileFromBrowser: function(objectNamePtr, funcNamePtr, taskIdPtr)
 			g.root.style.display = "none";
 		}
 
-		function sendResult(result) {
+		function sendResult(taskId, result) {
 			hide();
 			g.busy = false;
+			console.log("In sendResult. taskId=" + taskId);
 			SendMessage(objectName, funcName, JSON.stringify({"Id":taskId, "Success":true, "Data":result}));
 		}
 		
-		function sendError(msg) {
+		function sendError(taskId, msg) {
 			SendMessage(objectName, funcName, JSON.stringify({"Id":taskId, "Success":false, "Data":msg}));
 		}
 	}

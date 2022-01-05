@@ -39,6 +39,8 @@ public class LayerPlane : MonoBehaviour
     {
         _chainBuf.Clear();
 
+        bool prevAxisActive = AxisObj.gameObject.activeInHierarchy;
+        AxisObj.gameObject.SetActive(true);
         bool fullyConnected = false;
         CurveGeomBase currCrv = null;
         Vector3 currPt = Vector3.zero;
@@ -82,6 +84,7 @@ public class LayerPlane : MonoBehaviour
         }
         else
         {
+            AxisObj.gameObject.SetActive(prevAxisActive);
             return;
         }
 
@@ -137,6 +140,8 @@ public class LayerPlane : MonoBehaviour
         {
             Debug.Log(string.Format("Layer is not fully connected. Max chain of {0} curves: {1}", _chainBuf.Count, DbgPrintCurveChain(_chainBuf)));
         }
+
+        AxisObj.gameObject.SetActive(prevAxisActive);
     }
 
     public List<ValueTuple<CurveGeomBase, bool>> GetConnectedChain()

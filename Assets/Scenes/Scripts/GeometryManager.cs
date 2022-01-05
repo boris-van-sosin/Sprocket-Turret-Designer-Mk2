@@ -1016,7 +1016,7 @@ public class GeometryManager : MonoBehaviour
         _receiveTankBlueprintHandle = GeomObjectFactory.GetFileReceiver().StartUploadFile();
         _receiveTankBlueprintHandle.OnDataReceived += OnReceiveTankDesign;
         //Debug.Log("Started receiving tank design");
-        if (_receiveStructureDefHandle.ReceivedData)
+        if (_receiveTankBlueprintHandle.ReceivedData)
         {
             OnReceiveTankDesign(_receiveTankBlueprintHandle.Data, _receiveTankBlueprintHandle.Success);
         }

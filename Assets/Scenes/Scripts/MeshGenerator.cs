@@ -1047,7 +1047,7 @@ public static class MeshGenerator
         List<Vector3> vertices = new List<Vector3>(quads.Quads.Count * 4);
         IntArrayContainer[] faces = new IntArrayContainer[quads.Quads.Count];
         int[] expandedThicknessMap = new int[quads.Quads.Count * 4];
-        List<List<int>> dups = new List<List<int>>(quads.Quads.Count * 4);
+        Dictionary<int, List<int>> dups = new Dictionary<int, List<int>>(quads.Quads.Count * 4);
         int vertexIdx = 0;
         for (int i = 0; i < quads.Quads.Count; ++i)
         {
@@ -1100,15 +1100,7 @@ public static class MeshGenerator
                     Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
                 }
 
-                List<int> currDups = new List<int>(4);
-                for (int j = 0; j < vertices.Count; ++j)
-                {
-                    if (quads.Vertices[ptIdx] == vertices[j])
-                    {
-                        currDups.Add(j);
-                    }
-                }
-                dups.Add(currDups);
+                MergeDups(ptIdx, dups, quads.Vertices, vertices);
 
                 if (nextStartOfLayer)
                 {
@@ -1124,15 +1116,7 @@ public static class MeshGenerator
             {
                 for (int m = 0; m <= halfPoints; m += halfPoints)
                 {
-                    List<int> currDups = new List<int>(4);
-                    for (int j = 0; j < vertices.Count; ++j)
-                    {
-                        if (quads.Vertices[i + m] == vertices[j])
-                        {
-                            currDups.Add(j);
-                        }
-                    }
-                    dups.Add(currDups);
+                    MergeDups(i + m, dups, quads.Vertices, vertices);
                 }
             }
         }
@@ -1142,12 +1126,36 @@ public static class MeshGenerator
             Vertices = vertices.ToArray(),
             Faces = faces,
             ThicknessMap = expandedThicknessMap,
-            Dups = dups.Select(dl => new IntArrayContainer() { Array = dl.ToArray() }).ToArray()
+            Dups = dups.Select(dl => new IntArrayContainer() { Array = dl.Value.ToArray() }).ToArray()
         };
 
         string jsonData = JsonUtility.ToJson(exportData);
 
         return exportData;
+    }
+
+    private static void MergeDups(int idx, Dictionary<int, List<int>> dups, IReadOnlyList<Vector3> verticesOrig, IReadOnlyList<Vector3> verticesWithdups)
+    {
+        foreach (var dupList in dups)
+        {
+            if (dupList.Value.Count > 0)
+            {
+                if (verticesWithdups[dupList.Value[0]] == verticesOrig[idx])
+                {
+                    return;
+                }
+            }
+        }
+
+        List<int> currDups = new List<int>(4);
+        for (int j = 0; j < verticesWithdups.Count; ++j)
+        {
+            if (verticesOrig[idx] == verticesWithdups[j])
+            {
+                currDups.Add(j);
+            }
+        }
+        dups.Add(idx, currDups);
     }
 
     public class QuadMesh

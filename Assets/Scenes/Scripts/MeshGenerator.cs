@@ -1018,6 +1018,11 @@ public static class MeshGenerator
             vertices.Add(quads.Vertices[quads.Quads[i].Item3]);
             vertices.Add(quads.Vertices[quads.Quads[i].Item4]);
 
+            expandedThicknessMap[vertexIdx + 0] = thicknessMap[i];
+            expandedThicknessMap[vertexIdx + 1] = thicknessMap[i];
+            expandedThicknessMap[vertexIdx + 2] = thicknessMap[i];
+            expandedThicknessMap[vertexIdx + 3] = thicknessMap[i];
+
             int[] currFace = new int[]
             {
                 vertexIdx + 2,
@@ -1063,7 +1068,6 @@ public static class MeshGenerator
                     if (quads.Vertices[ptIdx] == vertices[j])
                     {
                         currDups.Add(j);
-                        expandedThicknessMap[j] = thicknessMap[ptIdx];
                     }
                 }
                 dups.Add(currDups);
@@ -1088,7 +1092,6 @@ public static class MeshGenerator
                         if (quads.Vertices[i + m] == vertices[j])
                         {
                             currDups.Add(j);
-                            expandedThicknessMap[j] = thicknessMap[i + m];
                         }
                     }
                     dups.Add(currDups);
@@ -1100,7 +1103,7 @@ public static class MeshGenerator
         {
             Vertices = vertices.ToArray(),
             Faces = faces,
-            ThicknessMap = thicknessMap.ToArray(),
+            ThicknessMap = expandedThicknessMap,
             Dups = dups.Select(dl => new IntArrayContainer() { Array = dl.ToArray() }).ToArray()
         };
 

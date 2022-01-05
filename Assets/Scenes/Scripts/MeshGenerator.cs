@@ -689,9 +689,9 @@ public static class MeshGenerator
             splitStruct.SideCurves.Add(new SectionCurves(Section.Side, 0, floorElevation));
             splitStruct.RearCurves.Add(new SectionCurves(Section.Rear, 0, floorElevation));
             Vector3[]
-                floorFrontPts = new Vector3[] { floorStart, Vector3.Lerp(floorStart, floorEnd, 1f / 3f) },
+                floorFrontPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 0.05f), Vector3.Lerp(floorStart, floorEnd, 1f / 3f) },
                 floorMidPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 1f / 3f), Vector3.Lerp(floorStart, floorEnd, 2f / 3f) },
-                floorRearPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 2f / 3f), floorEnd };
+                floorRearPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 2f / 3f), Vector3.Lerp(floorStart, floorEnd, 0.95f) };
 
             splitStruct.FrontCurves[0].Curves.Add((new BezierCurve<Vector3>(floorFrontPts, BezierCurveGeom.Blend), 2));
             splitStruct.SideCurves[0].Curves.Add((new BezierCurve<Vector3>(floorMidPts, BezierCurveGeom.Blend), 2));
@@ -727,9 +727,9 @@ public static class MeshGenerator
             splitStruct.RearCurves.Add(new SectionCurves(Section.Rear, layerIdx, roofElevation));
 
             Vector3[]
-                roofFrontPts = new Vector3[] { roofStart, Vector3.Lerp(roofStart, roofEnd, 1f / 3f) },
+                roofFrontPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 0.05f), Vector3.Lerp(roofStart, roofEnd, 1f / 3f) },
                 roofMidPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 1f / 3f), Vector3.Lerp(roofStart, roofEnd, 2f / 3f) },
-                roofRearPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 2f / 3f), roofEnd };
+                roofRearPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 2f / 3f), Vector3.Lerp(roofStart, roofEnd, 0.95f) };
 
             splitStruct.FrontCurves[layerIdx].Curves.Add((new BezierCurve<Vector3>(roofFrontPts, BezierCurveGeom.Blend), 2));
             splitStruct.SideCurves[layerIdx].Curves.Add((new BezierCurve<Vector3>(roofMidPts, BezierCurveGeom.Blend), 2));

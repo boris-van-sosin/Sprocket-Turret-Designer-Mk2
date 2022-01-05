@@ -13,7 +13,7 @@ public static class MeshGenerator
 
     public static (QuadMesh, StructureExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
     {
-        ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg);
+        ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg, true);
 
         // Generate the mesh:
         List<(int, int)> edges = new List<(int, int)>();
@@ -204,7 +204,7 @@ public static class MeshGenerator
 
     public static HexMesh GenerateHexMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
-        ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg);
+        ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg, false);
 
         // Generate the mesh:
         List<(int, int)> edges = new List<(int, int)>();
@@ -625,7 +625,7 @@ public static class MeshGenerator
         return new List<float>(samplePts);
     }
 
-    private static ProcessedCurves ProcessAndSampleCurves(List<LayerPlane> layers, int samplesPerCurvedSeg)
+    private static ProcessedCurves ProcessAndSampleCurves(List<LayerPlane> layers, int samplesPerCurvedSeg, bool generateFloorAndRoof)
     {
         int maxOrder = 0;
         List<RawCurveChain> rawChains = new List<RawCurveChain>();
@@ -672,21 +672,33 @@ public static class MeshGenerator
             throw new Exception("Fewer than two layers with a fully connected chain.");
         }
 
-        /*
-        foreach (RawCurveChain currChain in rawChains)
-        {
-            for (int i = 0; i < currChain.Curves.Count; ++i)
-            {
-                while (currChain.Curves[i].Order < maxOrder)
-                {
-                    currChain.Curves[i] = currChain.Curves[i].RaiseDegree();
-                }
-            }
-        }
-        */
-
         SplitStructure splitStruct = new SplitStructure() { FrontCurves = new List<SectionCurves>(), SideCurves = new List<SectionCurves>(), RearCurves = new List<SectionCurves>() };
-        int layerIdx = 0;
+
+        if (generateFloorAndRoof)
+        {
+            float floorElevation = rawChains[0].Elevation;
+            ICurve<Vector3>
+                firstFloorCurve = rawChains[0].Curves[0],
+                lastFloorCurve = rawChains[0].Curves[rawChains[0].Curves.Count - 1];
+
+            Vector3
+            floorStart = new Vector3(0f, floorElevation, firstFloorCurve.Eval(firstFloorCurve.Domain.Item1).z),
+            floorEnd = new Vector3(0f, floorElevation, lastFloorCurve.Eval(lastFloorCurve.Domain.Item2).z);
+
+            splitStruct.FrontCurves.Add(new SectionCurves(Section.Front, 0, floorElevation));
+            splitStruct.SideCurves.Add(new SectionCurves(Section.Side, 0, floorElevation));
+            splitStruct.RearCurves.Add(new SectionCurves(Section.Rear, 0, floorElevation));
+            Vector3[]
+                floorFrontPts = new Vector3[] { floorStart, Vector3.Lerp(floorStart, floorEnd, 1f / 3f) },
+                floorMidPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 1f / 3f), Vector3.Lerp(floorStart, floorEnd, 2f / 3f) },
+                floorRearPts = new Vector3[] { Vector3.Lerp(floorStart, floorEnd, 2f / 3f), floorEnd };
+
+            splitStruct.FrontCurves[0].Curves.Add((new BezierCurve<Vector3>(floorFrontPts, BezierCurveGeom.Blend), 2));
+            splitStruct.SideCurves[0].Curves.Add((new BezierCurve<Vector3>(floorMidPts, BezierCurveGeom.Blend), 2));
+            splitStruct.RearCurves[0].Curves.Add((new BezierCurve<Vector3>(floorRearPts, BezierCurveGeom.Blend), 2));
+        }
+
+        int layerIdx = generateFloorAndRoof ? 1 : 0;
         foreach (RawCurveChain currChain in rawChains)
         {
             splitStruct.FrontCurves.Add(new SectionCurves(Section.Front, layerIdx, currChain.Elevation));
@@ -700,24 +712,48 @@ public static class MeshGenerator
             ++layerIdx;
         }
 
+        if (generateFloorAndRoof)
+        {
+            float roofElevation = rawChains[rawChains.Count - 1].Elevation;
+            ICurve<Vector3>
+                firstRoofCurve = rawChains[rawChains.Count - 1].Curves[0],
+                lastRoofCurve = rawChains[rawChains.Count - 1].Curves[rawChains[rawChains.Count - 1].Curves.Count - 1];
+            Vector3
+                roofStart = new Vector3(0f, roofElevation, firstRoofCurve.Eval(firstRoofCurve.Domain.Item1).z),
+                roofEnd = new Vector3(0f, roofElevation, lastRoofCurve.Eval(lastRoofCurve.Domain.Item2).z);
+
+            splitStruct.FrontCurves.Add(new SectionCurves(Section.Front, layerIdx, roofElevation));
+            splitStruct.SideCurves.Add(new SectionCurves(Section.Side, layerIdx, roofElevation));
+            splitStruct.RearCurves.Add(new SectionCurves(Section.Rear, layerIdx, roofElevation));
+
+            Vector3[]
+                roofFrontPts = new Vector3[] { roofStart, Vector3.Lerp(roofStart, roofEnd, 1f / 3f) },
+                roofMidPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 1f / 3f), Vector3.Lerp(roofStart, roofEnd, 2f / 3f) },
+                roofRearPts = new Vector3[] { Vector3.Lerp(roofStart, roofEnd, 2f / 3f), roofEnd };
+
+            splitStruct.FrontCurves[layerIdx].Curves.Add((new BezierCurve<Vector3>(roofFrontPts, BezierCurveGeom.Blend), 2));
+            splitStruct.SideCurves[layerIdx].Curves.Add((new BezierCurve<Vector3>(roofMidPts, BezierCurveGeom.Blend), 2));
+            splitStruct.RearCurves[layerIdx].Curves.Add((new BezierCurve<Vector3>(roofRearPts, BezierCurveGeom.Blend), 2));
+        }
+
         List<float> frontSamplePts = ReparamSectionCurves(splitStruct.FrontCurves, true, false);
         List<float> sideSamplePts = ReparamSectionCurves(splitStruct.SideCurves, true, true);
         List<float> rearSamplePts = ReparamSectionCurves(splitStruct.RearCurves, false, true);
 
-        return new ProcessedCurves() { NumLayers = rawChains.Count, SplitStruct = splitStruct, FrontSamplePoints = frontSamplePts, SideSamplePoints = sideSamplePts, RearSamplePoints = rearSamplePts };
+        return new ProcessedCurves() { NumLayers = generateFloorAndRoof ? rawChains.Count + 2 : rawChains.Count, SplitStruct = splitStruct, FrontSamplePoints = frontSamplePts, SideSamplePoints = sideSamplePts, RearSamplePoints = rearSamplePts };
     }
 
     public static Mesh AssignToMesh(QuadMesh quads)
     {
         Mesh m = new Mesh();
         m.Clear();
-        Vector3[] vertices = new Vector3[quads.Vertices.Count + 2];
+        Vector3[] vertices = new Vector3[quads.Vertices.Count];
         for (int i = 0; i < quads.Vertices.Count; ++i)
         {
             vertices[i] = quads.Vertices[i];
         }
-        vertices[quads.Vertices.Count] = new Vector3(0f, quads.Vertices[quads.FloorVertices[0]].y, 0f);
-        vertices[quads.Vertices.Count + 1] = new Vector3(0f, quads.Vertices[quads.RoofVertices[0]].y, 0f);
+        //vertices[quads.Vertices.Count] = new Vector3(0f, quads.Vertices[quads.FloorVertices[0]].y, 0f);
+        //vertices[quads.Vertices.Count + 1] = new Vector3(0f, quads.Vertices[quads.RoofVertices[0]].y, 0f);
         m.SetVertices(vertices);
         List<int> triangles = new List<int>(quads.Quads.Count * 6);
 
@@ -732,6 +768,7 @@ public static class MeshGenerator
             triangles.Add(q.Item4);
         }
 
+        /*
         for (int i = 0; i < quads.FloorVertices.Count; ++i)
         {
             if (i < quads.FloorVertices.Count / 2)
@@ -763,10 +800,11 @@ public static class MeshGenerator
                 triangles.Add(quads.Vertices.Count + 1);
             }
         }
+        */
 
         m.SetTriangles(triangles, 0, true);
 
-        Vector2[] uvs = new Vector2[quads.Vertices.Count + 2];
+        Vector2[] uvs = new Vector2[quads.Vertices.Count];
         int idx = 0;
         for (int i = 0; i < quads.MeshSize.Item1; ++i)
         {
@@ -775,7 +813,7 @@ public static class MeshGenerator
                 uvs[idx] = new Vector2(((float)i) / quads.MeshSize.Item1, ((float)j) / quads.MeshSize.Item2);
             }
         }
-        uvs[quads.Vertices.Count] = uvs[quads.Vertices.Count + 1] = Vector2.zero;
+        //uvs[quads.Vertices.Count] = uvs[quads.Vertices.Count + 1] = Vector2.zero;
         m.uv = uvs;
 
         m.UploadMeshData(true);
@@ -1025,13 +1063,13 @@ public static class MeshGenerator
 
             int[] currFace = new int[]
             {
-                vertexIdx + 2,
-                vertexIdx + 1,
                 vertexIdx + 0,
-
-                vertexIdx + 3,
+                vertexIdx + 1,
                 vertexIdx + 2,
-                vertexIdx + 0
+
+                vertexIdx + 0,
+                vertexIdx + 2,
+                vertexIdx + 3
             };
             faces[i] = new IntArrayContainer() { Array = currFace };
             vertexIdx += 4;

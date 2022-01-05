@@ -1020,13 +1020,13 @@ public static class MeshGenerator
 
             int[] currFace = new int[]
             {
-                quads.Quads[i].Item1,
+                quads.Quads[i].Item3,
                 quads.Quads[i].Item2,
-                quads.Quads[i].Item3,
-
                 quads.Quads[i].Item1,
+
+                quads.Quads[i].Item4,
                 quads.Quads[i].Item3,
-                quads.Quads[i].Item4
+                quads.Quads[i].Item1
             };
             faces[i] = new IntArrayContainer() { Array = currFace };
             vertexIdx += 4;

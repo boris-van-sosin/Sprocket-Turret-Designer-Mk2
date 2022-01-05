@@ -10,13 +10,21 @@ public static class JavascripAdapter
     [DllImport("__Internal")]
     private static extern void GetFileFromBrowser(string targetObjectName, string callbackFuncName, string taskId);
 
-    public static void DownloadData(string data, string fileType, string fileName)
+    [DllImport("__Internal")]
+    private static extern void SetTurretData(string tankBlueprint, string turretData);
+
+    public static void DownloadData(string data, string fileName)
     {
-        DownloadStringAsFile(data, fileType, fileName);
+        DownloadStringAsFile(data, "text/json", fileName);
     }
 
     public static void RequestUploadFile(string targetObjectName, string callbackFuncName, string taskId)
     {
         GetFileFromBrowser(targetObjectName, callbackFuncName, taskId);
+    }
+
+    public static void SetTurretDataAndDownload(string tankBlueprint, string turretData)
+    {
+        SetTurretData(tankBlueprint, turretData);
     }
 }

@@ -17,7 +17,7 @@ DownloadStringAsFile : function (text, fileType, fileName)
 
 SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 	{
-		let tankObj = JSON.parse(UTF8ToString(fileName));
+		let tankObj = JSON.parse(UTF8ToString(tankBlueprint_stringPtr));
 		for (let i in tankObj.blueprints)
 		{
 			if (tankObj.blueprints[i].id == "Compartment")
@@ -25,15 +25,37 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 				let compartmentData = JSON.parse(tankObj.blueprints[i].data);
 				if (compartmentData.name == "Turret 1")
 				{
-					
+					SetTurretGeometry(compartmentData, turretData_stringPtr);
+					break;
 				}
 			}
 		}
+		
+		let fileName = tankObj.name + "_withTurret.blueprint";
+		DownloadStringAsFile(JSON.stringify(tankObj, null, 2), "text/json", );
 	},
 
 SetTurretGeometry: function (turretObj, turretData_stringPtr)
 	{
 		console.log("Will set turret data for turret object " + turretObj);
+		let turretDataObj = JSON.parse(UTF8ToString(turretData_stringPtr));
+		
+		let vertices = new Array(turretDataObj.Vertices.length * 3);
+		for (let i in turretDataObj.Vertices)
+		{
+			vertices[i * 3 + 0] = turretDataObj.Vertices[i].x;
+			vertices[i * 3 + 1] = turretDataObj.Vertices[i].y;
+			vertices[i * 3 + 2] = turretDataObj.Vertices[i].z;
+		}
+		
+		let dups = turretDataObj.Dups.slice();
+		let thicknessMap = turretDataObj.Dups.slice();
+		let faces = turretDataObj.Dups.slice();
+		
+		turretObj.compartment.points = vertices;
+		turretObj.compartment.sharedPoints = dups;
+		turretObj.compartment.thicknessMap = thicknessMap;
+		turretObj.compartment.faceMap = faces;
 	},
 
 

@@ -8,6 +8,11 @@ public static class MeshGenerator
 {
     public static QuadMesh GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
+        return GenerateQuadMesh(layers, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
+    }
+
+    public static (QuadMesh, StructureExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
+    {
         ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg);
 
         // Generate the mesh:
@@ -19,6 +24,8 @@ public static class MeshGenerator
             FloorVertices = new List<int>(processed.FrontSamplePoints.Count),
             RoofVertices = new List<int>(processed.FrontSamplePoints.Count),
         };
+        List<int> thicknessMap = forExport ? new List<int>(quads.Vertices.Count) : null;
+
         int vertexIdx = 0, currlayerBase = 0, lastLayerBase = 0;
         for (int i = 0; i < processed.NumLayers; ++i)
         {
@@ -31,6 +38,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
+                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
 
                     if (i == 0)
                     {
@@ -78,6 +86,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
+                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
 
                     if (i == 0)
                     {
@@ -125,6 +134,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
+                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
 
                     if (i == 0)
                     {
@@ -178,12 +188,18 @@ public static class MeshGenerator
         quads.FloorVertices.AddRange(mirroredFloor);
         quads.RoofVertices.AddRange(mirroredRoof);
         edges.AddRange(mirroredEdges);
+        if (thicknessMap != null)
+        {
+            int[] mirroredThickness = thicknessMap.ToArray();
+            thicknessMap.AddRange(mirroredThickness);
+        }
 
         quads.MeshSize = (quads.Vertices.Count / processed.NumLayers, processed.NumLayers);
 
         GeomObjectFactory.GetGeometryManager().AssignGizmos(edges.Select(e => (quads.Vertices[e.Item1], quads.Vertices[e.Item2], UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))), quads.Vertices.Select(v => (v, UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))));
 
-        return quads;
+        StructureExportData exportData = forExport ? AssignToExportData(quads, processed.NumLayers, thicknessMap) : null;
+        return (quads, exportData);
     }
 
     public static HexMesh GenerateHexMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
@@ -875,6 +891,100 @@ public static class MeshGenerator
         return m;
     }
 
+    private static StructureExportData AssignToExportData(QuadMesh quads, int numLayers, List<int> thicknessMap)
+    {
+        Vector3[] vertices = new Vector3[quads.Vertices.Count + 2];
+        for (int i = 0; i < quads.Vertices.Count; ++i)
+        {
+            vertices[i] = quads.Vertices[i];
+        }
+        vertices[quads.Vertices.Count] = new Vector3(0f, quads.Vertices[quads.FloorVertices[0]].y, 0f);
+        vertices[quads.Vertices.Count + 1] = new Vector3(0f, quads.Vertices[quads.RoofVertices[0]].y, 0f);
+
+        int numWallTriangles = quads.Quads.Count * 2;
+        StructureExportData exportData = new StructureExportData()
+        {
+            Vertices = quads.Vertices.ToArray(),
+            Faces = new int[numWallTriangles + 4][],
+            ThicknessMap = thicknessMap.ToArray(),
+            Dups = new int[numLayers * 2][]
+        };
+
+        List<int> triangles = new List<int>(quads.Quads.Count * 6);
+
+        int triangleIdx = 0;
+        foreach (var q in quads.Quads)
+        {
+            exportData.Faces[triangleIdx++] = new int[] { q.Item1, q.Item2, q.Item2 };
+            exportData.Faces[triangleIdx++] = new int[] { q.Item1, q.Item3, q.Item4 };
+        }
+
+        exportData.Faces[numWallTriangles + 0] = new int[quads.FloorVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 1] = new int[quads.FloorVertices.Count / 2];
+        int k = 0;
+        for (int i = 0; i < quads.FloorVertices.Count; ++i)
+        {
+            if (i < quads.FloorVertices.Count / 2)
+            {
+                exportData.Faces[numWallTriangles + 0][k++] = quads.FloorVertices[quads.FloorVertices.Count / 2 - 1 - i];
+                if (k >= quads.FloorVertices.Count / 2)
+                {
+                    k = 0;
+                }
+            }
+            else
+            {
+                exportData.Faces[numWallTriangles + 1][k++] = quads.FloorVertices[i];
+            }
+        }
+
+        exportData.Faces[numWallTriangles + 2] = new int[quads.RoofVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 3] = new int[quads.RoofVertices.Count / 2];
+        k = 0;
+        for (int i = 0; i < quads.RoofVertices.Count; ++i)
+        {
+            if (i < quads.RoofVertices.Count / 2)
+            {
+                exportData.Faces[numWallTriangles + 2][k++] = quads.RoofVertices[i];
+                if (k >= quads.RoofVertices.Count / 2)
+                {
+                    k = 0;
+                }
+            }
+            else
+            {
+                exportData.Faces[numWallTriangles + 3][k++] = quads.RoofVertices[quads.RoofVertices.Count - 1 - i];
+            }
+        }
+
+        int verticesPerLayer = exportData.Vertices.Length / numLayers,
+            ptIdx = 0, halfPoints = exportData.Vertices.Length / 2, halfLayer = verticesPerLayer / 2;
+        for (int i = 0; i < numLayers * 2; ++i)
+        {
+            Vector3
+                pt1 = exportData.Vertices[ptIdx],
+                pt2 = exportData.Vertices[ptIdx + halfPoints];
+            if (pt1 != pt2 )
+            {
+                Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
+            }
+            exportData.Dups[i] = new int[] { ptIdx, ptIdx + halfPoints };
+
+            if (i % 2 == 0)
+            {
+                ptIdx += halfLayer - 1;
+            }
+            else
+            {
+                ptIdx += 1;
+            }
+        }
+
+        string jsonData = JsonUtility.ToJson(exportData);
+
+        return exportData;
+    }
+
     public class QuadMesh
     {
         public (int, int) MeshSize { get; set; }
@@ -1003,4 +1113,13 @@ public class CurveAffineReparameterization<T> : ICurve<T>
 
     private ICurve<T> _innerCurve;
     private float _tMin, _tMax;
+}
+
+[Serializable]
+public class StructureExportData
+{
+    public Vector3[] Vertices;
+    public int[] ThicknessMap;
+    public int[][] Dups;
+    public int[][] Faces;
 }

@@ -22,6 +22,7 @@ public class ObjectPrototypes : MonoBehaviour
     public UIRadioGroup CameraModeToggle;
     public UploadFileReceiver FileReceiver;
     public Transform PreviewObject;
+    public UnityEngine.UI.Image UploadedDesignImage;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
     public Material CtlPtMtlDefault;
@@ -127,6 +128,11 @@ public class ObjectPrototypes : MonoBehaviour
     public Transform GetPreviewObject()
     {
         return PreviewObject;
+    }
+
+    public UnityEngine.UI.Image GetUploadedDesignImage()
+    {
+        return UploadedDesignImage;
     }
 
     public Material GetCurveMtlDefault()

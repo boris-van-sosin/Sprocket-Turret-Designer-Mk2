@@ -188,7 +188,16 @@ public class GeometryManager : MonoBehaviour
                 if (bestHit.HasValue)
                 {
                     Vector3 placePt = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
-                    Transform ctlPt = GeomObjectFactory.CreateCtlPt(snapCtlPt != null ? snapCtlPt.transform.position : bestHit.Value.point);
+
+                    if (_symmetricMode)
+                    {
+                        if (placePt.x < 0f)
+                        {
+                            placePt.x = 0f;
+                        }
+                    }
+
+                    Transform ctlPt = GeomObjectFactory.CreateCtlPt(placePt);
                     ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
                     ctlPt.SetParent(_currTmpBzrCurve.transform);
                     _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
@@ -649,6 +658,22 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
+    public void TryChangeCtlPtPosition(ControlPoint ctlPt, Vector3 newPos)
+    {
+        if (_symmetricMode)
+        {
+            if (newPos.x < 0f)
+            {
+                newPos.x = 0f;
+            }
+        }
+        ctlPt.transform.position = newPos;
+        if (_moveTrihedron != null)
+        {
+            _moveTrihedron.transform.position = ctlPt.transform.position;
+        }
+    }
+
     public void StartCreateLine()
     {
         if (_currTmpBzrCurve == null && _currTmpCircArc == null)
@@ -918,6 +943,11 @@ public class GeometryManager : MonoBehaviour
     public void GeneratePreview()
     {
         MeshGenerator.QuadMesh quads = MeshGenerator.GenerateQuadMesh(_layers, 5);
+        SetHexMeshPreview(quads);
+    }
+
+    private static void SetHexMeshPreview(MeshGenerator.QuadMesh quads)
+    {
         Transform previewObj = GeomObjectFactory.GetPreviewObject();
         previewObj.gameObject.SetActive(true);
         previewObj.Find("PreviewCore").gameObject.SetActive(false);
@@ -938,9 +968,15 @@ public class GeometryManager : MonoBehaviour
         mf.mesh = MeshGenerator.AssignToMesh(hexes, 0f);
     }
 
+    public void HidePreview()
+    {
+        Transform previewObj = GeomObjectFactory.GetPreviewObject();
+        previewObj.gameObject.SetActive(false);
+    }
+
     public void DownloadStructureDef()
     {
-        JavascripAdapter.DownloadData(SerializationUtils.Serialize(_layers), "txt", "MyTurret");
+        JavascripAdapter.DownloadData(SerializationUtils.Serialize(_layers), "MyTurret.txt");
     }
 
     public void UploadStructureDef()
@@ -989,7 +1025,19 @@ public class GeometryManager : MonoBehaviour
     private void OnReceiveTankDesign(string tankDesignData, bool success)
     {
         _receiveTankBlueprintHandle.OnDataReceived -= OnReceiveTankDesign;
+        _tankData = tankDesignData;
+        GeomObjectFactory.GetUploadedDesignImage().gameObject.SetActive(_tankData != null);
         _receiveTankBlueprintHandle = null;
+    }
+
+    public void GenerateStructureAndDownload()
+    {
+        if (_tankData != null)
+        {
+            (MeshGenerator.QuadMesh, StructureExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, 10, 10, 10, 10, 10);
+            SetHexMeshPreview(meshData.Item1);
+            JavascripAdapter.SetTurretDataAndDownload(_tankData, JsonUtility.ToJson(meshData.Item2));
+        }
     }
 
     private void SetStructureFromUpload(string structureDef)
@@ -1094,6 +1142,8 @@ public class GeometryManager : MonoBehaviour
 
     private List<LayerPlane> _layers = new List<LayerPlane>();
     private LayerPlane _activeLayer = null;
+
+    private string _tankData = null;
 
     private Axis _dragAxis;
     private Vector3 _dragOrigin;

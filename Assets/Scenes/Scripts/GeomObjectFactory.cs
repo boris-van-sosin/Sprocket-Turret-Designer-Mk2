@@ -108,6 +108,11 @@ public static class GeomObjectFactory
         return _prototypes.GetPreviewObject();
     }
 
+    public static UnityEngine.UI.Image GetUploadedDesignImage()
+    {
+        return _prototypes.GetUploadedDesignImage();
+    }
+
     public static Material GetCurveMtlDefault()
     {
         return _prototypes.GetCurveMtlDefault();

@@ -30,7 +30,7 @@ public class CtlPtEditPanel : MonoBehaviour
     private void AbsValueChanged(string val)
     {
         Vector3 absolutePos = new Vector3(float.Parse(AbsXInput.text), _ctlPt.transform.position.y, float.Parse(AbsZInput.text));
-        _ctlPt.transform.position = absolutePos;
+        GeomObjectFactory.GetGeometryManager().TryChangeCtlPtPosition(_ctlPt, absolutePos);
         _crv.UpdateControlPoint(_ctlPt);
         _crv.TryRender();
         Vector3 relativePos = _ctlPt.transform.position - _crv.CtlPts[0].position;
@@ -42,11 +42,11 @@ public class CtlPtEditPanel : MonoBehaviour
     {
         Vector3 relativePos = new Vector3(float.Parse(RelativeXInput.text), 0f, float.Parse(RelativeZInput.text));
         Vector3 absolutePos = _crv.CtlPts[0].position + relativePos;
-        _ctlPt.transform.position = absolutePos;
+        GeomObjectFactory.GetGeometryManager().TryChangeCtlPtPosition(_ctlPt, absolutePos);
         _crv.UpdateControlPoint(_ctlPt);
         _crv.TryRender();
-        AbsXInput.SetTextWithoutNotify(absolutePos.x.ToString());
-        AbsZInput.SetTextWithoutNotify(absolutePos.z.ToString());
+        AbsXInput.SetTextWithoutNotify(_ctlPt.transform.position.x.ToString());
+        AbsZInput.SetTextWithoutNotify(_ctlPt.transform.position.z.ToString());
     }
 
     public void UpdateValuesFromCtlPt()

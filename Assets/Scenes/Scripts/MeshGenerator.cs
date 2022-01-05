@@ -8,7 +8,7 @@ public static class MeshGenerator
 {
     public static QuadMesh GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
-        return GenerateQuadMesh(layers, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
+        return GenerateQuadMesh(layers, samplesPerCurvedSeg, true, 10, 10, 10, 10, 10).Item1;
     }
 
     public static (QuadMesh, StructureExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
@@ -907,7 +907,7 @@ public static class MeshGenerator
             Vertices = quads.Vertices.ToArray(),
             Faces = new IntArrayContainer[numWallTriangles + 4],
             ThicknessMap = thicknessMap.ToArray(),
-            Dups = new IntArrayContainer[numLayers * 2]
+            Dups = new IntArrayContainer[quads.Vertices.Count - numLayers]
         };
 
         List<int> triangles = new List<int>(quads.Quads.Count * 6);
@@ -958,25 +958,44 @@ public static class MeshGenerator
         }
 
         int verticesPerLayer = exportData.Vertices.Length / numLayers,
-            ptIdx = 0, halfPoints = exportData.Vertices.Length / 2, halfLayer = verticesPerLayer / 2;
-        for (int i = 0; i < numLayers * 2; ++i)
-        {
-            Vector3
-                pt1 = exportData.Vertices[ptIdx],
-                pt2 = exportData.Vertices[ptIdx + halfPoints];
-            if (pt1 != pt2 )
-            {
-                Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
-            }
-            exportData.Dups[i].Array = new int[] { ptIdx, ptIdx + halfPoints };
+            ptIdx = 0,
+            halfPoints = exportData.Vertices.Length / 2,
+            halfLayer = verticesPerLayer / 2;
+        k = 0;
+        bool nextStartOfLayer = true;
 
-            if (i % 2 == 0)
+        for (int i = 0; i < halfPoints; ++i)
+        {
+            if (i == ptIdx)
             {
-                ptIdx += halfLayer - 1;
+                if (ptIdx + halfPoints >= quads.Vertices.Count)
+                {
+                    continue;
+                }
+
+                Vector3
+                    pt1 = exportData.Vertices[ptIdx],
+                    pt2 = exportData.Vertices[ptIdx + halfPoints];
+                if (pt1 != pt2)
+                {
+                    Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
+                }
+                exportData.Dups[k++].Array = new int[] { ptIdx, ptIdx + halfPoints };
+
+                if (nextStartOfLayer)
+                {
+                    ptIdx += halfLayer - 1;
+                }
+                else
+                {
+                    ptIdx += 1;
+                }
+                nextStartOfLayer = !nextStartOfLayer;
             }
             else
             {
-                ptIdx += 1;
+                exportData.Dups[k++].Array = new int[] { i };
+                exportData.Dups[k++].Array = new int[] { i + halfPoints };
             }
         }
 

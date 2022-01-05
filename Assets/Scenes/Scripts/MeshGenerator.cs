@@ -905,9 +905,9 @@ public static class MeshGenerator
         StructureExportData exportData = new StructureExportData()
         {
             Vertices = quads.Vertices.ToArray(),
-            Faces = new int[numWallTriangles + 4][],
+            Faces = new IntArrayContainer[numWallTriangles + 4],
             ThicknessMap = thicknessMap.ToArray(),
-            Dups = new int[numLayers * 2][]
+            Dups = new IntArrayContainer[numLayers * 2]
         };
 
         List<int> triangles = new List<int>(quads.Quads.Count * 6);
@@ -915,18 +915,18 @@ public static class MeshGenerator
         int triangleIdx = 0;
         foreach (var q in quads.Quads)
         {
-            exportData.Faces[triangleIdx++] = new int[] { q.Item1, q.Item2, q.Item2 };
-            exportData.Faces[triangleIdx++] = new int[] { q.Item1, q.Item3, q.Item4 };
+            exportData.Faces[triangleIdx++].Array = new int[] { q.Item1, q.Item2, q.Item2 };
+            exportData.Faces[triangleIdx++].Array = new int[] { q.Item1, q.Item3, q.Item4 };
         }
 
-        exportData.Faces[numWallTriangles + 0] = new int[quads.FloorVertices.Count / 2];
-        exportData.Faces[numWallTriangles + 1] = new int[quads.FloorVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 0].Array = new int[quads.FloorVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 1].Array = new int[quads.FloorVertices.Count / 2];
         int k = 0;
         for (int i = 0; i < quads.FloorVertices.Count; ++i)
         {
             if (i < quads.FloorVertices.Count / 2)
             {
-                exportData.Faces[numWallTriangles + 0][k++] = quads.FloorVertices[quads.FloorVertices.Count / 2 - 1 - i];
+                exportData.Faces[numWallTriangles + 0].Array[k++] = quads.FloorVertices[quads.FloorVertices.Count / 2 - 1 - i];
                 if (k >= quads.FloorVertices.Count / 2)
                 {
                     k = 0;
@@ -934,18 +934,18 @@ public static class MeshGenerator
             }
             else
             {
-                exportData.Faces[numWallTriangles + 1][k++] = quads.FloorVertices[i];
+                exportData.Faces[numWallTriangles + 1].Array[k++] = quads.FloorVertices[i];
             }
         }
 
-        exportData.Faces[numWallTriangles + 2] = new int[quads.RoofVertices.Count / 2];
-        exportData.Faces[numWallTriangles + 3] = new int[quads.RoofVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 2].Array = new int[quads.RoofVertices.Count / 2];
+        exportData.Faces[numWallTriangles + 3].Array = new int[quads.RoofVertices.Count / 2];
         k = 0;
         for (int i = 0; i < quads.RoofVertices.Count; ++i)
         {
             if (i < quads.RoofVertices.Count / 2)
             {
-                exportData.Faces[numWallTriangles + 2][k++] = quads.RoofVertices[i];
+                exportData.Faces[numWallTriangles + 2].Array[k++] = quads.RoofVertices[i];
                 if (k >= quads.RoofVertices.Count / 2)
                 {
                     k = 0;
@@ -953,7 +953,7 @@ public static class MeshGenerator
             }
             else
             {
-                exportData.Faces[numWallTriangles + 3][k++] = quads.RoofVertices[quads.RoofVertices.Count - 1 - i];
+                exportData.Faces[numWallTriangles + 3].Array[k++] = quads.RoofVertices[quads.RoofVertices.Count - 1 - i];
             }
         }
 
@@ -968,7 +968,7 @@ public static class MeshGenerator
             {
                 Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
             }
-            exportData.Dups[i] = new int[] { ptIdx, ptIdx + halfPoints };
+            exportData.Dups[i].Array = new int[] { ptIdx, ptIdx + halfPoints };
 
             if (i % 2 == 0)
             {
@@ -1116,10 +1116,16 @@ public class CurveAffineReparameterization<T> : ICurve<T>
 }
 
 [Serializable]
+public struct IntArrayContainer
+{
+    public int[] Array;
+}
+
+[Serializable]
 public class StructureExportData
 {
     public Vector3[] Vertices;
     public int[] ThicknessMap;
-    public int[][] Dups;
-    public int[][] Faces;
+    public IntArrayContainer[] Dups;
+    public IntArrayContainer[] Faces;
 }

@@ -61,9 +61,19 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 				vertices[i * 3 + 2] = turretDataObj.Vertices[i].z;
 			}
 			
-			let dups = turretDataObj.Dups.slice();
+			let dups = new Array(turretDataObj.Dups.length);
+			for (let i in turretDataObj.Dups)
+			{
+				dups[i] = turretDataObj.Dups[i].Array;
+			}
+			
 			let thicknessMap = turretDataObj.ThicknessMap.slice();
-			let faces = turretDataObj.Faces.slice();
+			
+			let faces = new Array(turretDataObj.Faces.length);
+			for (let i in turretDataObj.Faces)
+			{
+				faces[i] = turretDataObj.Faces[i].Array;
+			}
 			
 			turretObj.compartment.points = vertices;
 			turretObj.compartment.sharedPoints = dups;

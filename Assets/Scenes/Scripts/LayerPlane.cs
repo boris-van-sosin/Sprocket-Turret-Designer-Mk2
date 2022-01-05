@@ -48,7 +48,7 @@ public class LayerPlane : MonoBehaviour
         Vector3 pt1 = axis.transform.position - axisVector * (axisCapsule.height / 2f);
         Vector3 pt2 = axis.transform.position + axisVector * (axisCapsule.height / 2f);
         int numHits = Physics.OverlapCapsuleNonAlloc(pt1, pt2, axisCapsule.radius, _colliderBuf, GlobalData.ControlPtsLayerMask);
-        float maxY = 0f;
+        float maxZ = 0f;
         ControlPoint firstCtlPt = null;
         for (int i  = 0; i < numHits; ++i)
         {
@@ -57,10 +57,10 @@ public class LayerPlane : MonoBehaviour
             {
                 if (Mathf.Abs(ctlPt.transform.position.x) < GlobalData.CurveConnectionTolerance)
                 {
-                    if (firstCtlPt == null || ctlPt.transform.position.y > maxY)
+                    if (firstCtlPt == null || ctlPt.transform.position.z > maxZ)
                     {
                         firstCtlPt = ctlPt;
-                        maxY = ctlPt.transform.position.y;
+                        maxZ = ctlPt.transform.position.z;
                     }
                 }
             }

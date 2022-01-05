@@ -1038,7 +1038,13 @@ public class GeometryManager : MonoBehaviour
     {
         if (_tankData != null)
         {
-            (MeshGenerator.QuadMesh, StructureExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, 10, 10, 10, 10, 10);
+            UISliderNum[] armourSliders = GeomObjectFactory.GetArmourValueSliders();
+            int frontArmour = Mathf.RoundToInt(armourSliders[0].Value),
+                sideArmour = Mathf.RoundToInt(armourSliders[1].Value),
+                rearArmour = Mathf.RoundToInt(armourSliders[2].Value),
+                floorArmour = Mathf.RoundToInt(armourSliders[3].Value),
+                roofArmour = Mathf.RoundToInt(armourSliders[4].Value);
+            (MeshGenerator.QuadMesh, StructureExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, frontArmour, sideArmour, rearArmour, floorArmour, roofArmour);
             SetHexMeshPreview(meshData.Item1);
             JavascripAdapter.SetTurretDataAndDownload(_tankData, JsonUtility.ToJson(meshData.Item2));
         }

@@ -24,7 +24,12 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 				let compartmentData = JSON.parse(tankObj.blueprints[i].data);
 				if (compartmentData.name == "Turret 1")
 				{
-					SetTurretGeometry(compartmentData, turretData_stringPtr);
+					console.log("Tank blueprint before:");
+					console.log(tankObj);
+					let modifiedTurret = SetTurretGeometry(compartmentData, turretData_stringPtr);
+					tankObj.blueprints[i].data = JSON.stringify(modifiedTurret);
+					console.log("Tank blueprint after:");
+					console.log(tankObj);
 					break;
 				}
 			}
@@ -79,6 +84,8 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 			turretObj.compartment.sharedPoints = dups;
 			turretObj.compartment.thicknessMap = thicknessMap;
 			turretObj.compartment.faceMap = faces;
+			
+			return turretObj;
 		}
 	},
 

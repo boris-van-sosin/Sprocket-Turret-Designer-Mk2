@@ -108,6 +108,11 @@ public static class GeomObjectFactory
         return _prototypes.GetPreviewObject();
     }
 
+    public static UISliderNum[] GetArmourValueSliders()
+    {
+        return _prototypes.ArmourObjects;
+    }
+
     public static UnityEngine.UI.Image GetUploadedDesignImage()
     {
         return _prototypes.GetUploadedDesignImage();

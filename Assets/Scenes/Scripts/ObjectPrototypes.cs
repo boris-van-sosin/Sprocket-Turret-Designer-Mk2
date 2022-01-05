@@ -22,6 +22,7 @@ public class ObjectPrototypes : MonoBehaviour
     public UIRadioGroup CameraModeToggle;
     public UploadFileReceiver FileReceiver;
     public Transform PreviewObject;
+    public UISliderNum[] ArmourObjects;
     public UnityEngine.UI.Image UploadedDesignImage;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
@@ -130,6 +131,10 @@ public class ObjectPrototypes : MonoBehaviour
         return PreviewObject;
     }
 
+    public UISliderNum[] GetArmourObjects()
+    {
+        return ArmourObjects;
+    }
     public UnityEngine.UI.Image GetUploadedDesignImage()
     {
         return UploadedDesignImage;

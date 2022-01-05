@@ -1959,7 +1959,7 @@ MonoBehaviour:
   CameraModeToggle: {fileID: 269599554}
   FileReceiver: {fileID: 22799265}
   PreviewObject: {fileID: 1963106848}
-  UploadedDesignImage: {fileID: 0}
+  UploadedDesignImage: {fileID: 853490311}
   CurveMtlDefault: {fileID: 2100000, guid: 1342d4440f6e6bd4db7bb978cb9ff396, type: 2}
   CurveMtlSelected: {fileID: 2100000, guid: fa7596b7513ad2d479d98dea833314c1, type: 2}
   CtlPtMtlDefault: {fileID: 2100000, guid: 6492f3bd1eee8404d82f7447b4c13f0c, type: 2}

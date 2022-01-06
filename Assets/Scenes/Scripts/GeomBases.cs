@@ -104,7 +104,7 @@ public abstract class CurveGeomBase : MonoBehaviour
     public IImmutableCurve<Vector3> GetCurve() => InnerCurve;
     public static Vector3 Blend(Vector3 P1, float a, Vector3 P2, float b) => (P1 * a) + (P2 * b);
     public IReadOnlyList<Transform> CtlPts => _cltPtsTransforms;
-    public void UpdateControlPoint(ControlPoint pt)
+    public virtual void UpdateControlPoint(ControlPoint pt)
     {
         int idx;
         if ((idx = _cltPtsTransforms.IndexOf(pt.transform)) >= 0)

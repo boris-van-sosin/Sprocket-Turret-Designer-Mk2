@@ -642,7 +642,7 @@ public static class MeshGenerator
                 BezierCurveGeom bzrCrv;
                 if ((bzrCrv = crv.Item1 as BezierCurveGeom) != null)
                 {
-                    BezierCurve<Vector3> currCrv = (BezierCurve<Vector3>)bzrCrv.GetCurve();
+                    BezierCurve<Vector3> currCrv = (BezierCurve<Vector3>) (bzrCrv.GetCurve());
                     if (crv.Item2)
                     {
                         currCrv = new BezierCurve<Vector3>(currCrv.ControlPoints.Reverse(), CurveGeomBase.Blend);
@@ -660,7 +660,7 @@ public static class MeshGenerator
                 CircularArcGeom circCrv;
                 if ((circCrv = crv.Item1 as CircularArcGeom) != null)
                 {
-                    //TODO: implement this
+                    currChain.AddRange(CircularArcToBezier((CircularArc<Vector3>) (circCrv.GetCurve()), crv.Item2));
                 }
             }
 
@@ -1253,6 +1253,57 @@ public static class MeshGenerator
         public List<float> FrontSamplePoints { get; set; }
         public List<float> SideSamplePoints { get; set; }
         public List<float> RearSamplePoints { get; set; }
+    }
+
+    private static List<WeightedlBezierCurve<Vector3>> CircularArcToBezier(CircularArc<Vector3> circ, bool reverse)
+    {
+        if (reverse)
+        {
+            CircularArc<Vector3> reversed = new CircularArc<Vector3>(circ.End, circ.Center, -circ.Angle, CircularArcGeom.Blend, CircularArcGeom.Magnitude, CircularArcGeom.Rotate, CircularArcGeom.AngleFromVectors);
+            return CircularArcToBezier(reversed, false);
+        }
+
+        if (circ.Angle > 90f || circ.Angle < -90f)
+        {
+            Vector3 midPoint = circ.Eval(0.5f);
+            CircularArc<Vector3> half1 = new CircularArc<Vector3>(circ.Start, circ.Center, circ.Angle * 0.5f, CircularArcGeom.Blend, CircularArcGeom.Magnitude, CircularArcGeom.Rotate, CircularArcGeom.AngleFromVectors);
+            CircularArc<Vector3> half2 = new CircularArc<Vector3>(midPoint, circ.Center, circ.Angle * 0.5f, CircularArcGeom.Blend, CircularArcGeom.Magnitude, CircularArcGeom.Rotate, CircularArcGeom.AngleFromVectors);
+            List<WeightedlBezierCurve<Vector3>> res = CircularArcToBezier(half1, false);
+            res.AddRange(CircularArcToBezier(half2, false));
+            return res;
+        }
+
+        Quaternion r90 = Quaternion.AngleAxis(90f, Vector3.up);
+        Vector3 startTangent = r90 * (circ.Start - circ.Center),
+            endTangent = r90 * (circ.End - circ.Center);
+
+        // Equation ssytem:
+        // a1*x + b1*y = c1
+        // a2*x + b2*y = c2
+        float
+            a1 = startTangent.x,
+            b1 = -endTangent.x,
+            c1 = (circ.End - circ.Start).x,
+            a2 = startTangent.z,
+            b2 = -endTangent.z,
+            c2 = (circ.End - circ.Start).z;
+        // Solve via Cramer's rule:
+        // x = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1)
+        // y = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1)
+        float x1 = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1), x2 = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1);
+        Vector3 resPt1 = circ.Start + x1 * startTangent, resPt2 = circ.End + x2 * endTangent;
+        if (resPt1 != resPt2)
+        {
+            Debug.LogError("Something is wrong in line-line intersection computation.");
+        }
+        float angle = Vector3.Angle(startTangent, endTangent);
+        float midW = Mathf.Sin(Mathf.Deg2Rad * angle / 2f);
+        List<Vector3> pts = new List<Vector3> { circ.Start, resPt1 * midW, circ.End };
+        List<float> weights = new List<float>() { 1f, midW, 1f};
+        return new List<WeightedlBezierCurve<Vector3>>()
+        {
+            new WeightedlBezierCurve<Vector3>(pts, weights, BezierCurveGeom.Blend)
+        };
     }
 
     private static readonly LayerComparer _comp = new LayerComparer();

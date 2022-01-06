@@ -12,7 +12,7 @@ public class CircularArc<T> : ICurve<T>
         _magnitudeFunc = magnitudeFunc;
         _rotateFunc = rotateFunc;
         _invRotateFunc = invRotateFunc;
-        Angle = Mathf.Deg2Rad * angle;
+        Angle = angle;
     }
 
     public (float, float) Domain => (0f, 1f);
@@ -32,7 +32,7 @@ public class CircularArc<T> : ICurve<T>
             case 1:
                 Center = newPt;
                 break;
-            case 3:
+            case 2:
                 SetAngle(_invRotateFunc(Start, Center, newPt));
                 break;
             default:
@@ -42,11 +42,11 @@ public class CircularArc<T> : ICurve<T>
 
     public void SetAngle(float angle)
     {
-        if (angle > 360f || angle < 360f)
+        if (angle > 360f || angle < -360f)
         {
             throw new Exception("Angle must be between -360 anf 360");
         }
-        Angle = Mathf.Deg2Rad * angle;
+        Angle = angle;
     }
 
     public T Center { get; private set; }

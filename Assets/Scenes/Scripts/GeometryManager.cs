@@ -155,7 +155,7 @@ public class GeometryManager : MonoBehaviour
 
     private void HandleCreateStep()
     {
-        if (_currTmpBzrCurve != null && _currCrvPtsLeft > 0)
+        if ((_currTmpBzrCurve != null || _currTmpCircArc != null) && _currCrvPtsLeft > 0)
         {
             Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
@@ -197,31 +197,51 @@ public class GeometryManager : MonoBehaviour
                         }
                     }
 
-                    Transform ctlPt = GeomObjectFactory.CreateCtlPt(placePt);
-                    ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
-                    ctlPt.SetParent(_currTmpBzrCurve.transform);
-                    _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
-                    --_currCrvPtsLeft;
+                    if (_currTmpBzrCurve != null)
+                    {
+                        Transform ctlPt = GeomObjectFactory.CreateCtlPt(placePt);
+                        ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
+                        ctlPt.SetParent(_currTmpBzrCurve.transform);
+                        _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
+                        --_currCrvPtsLeft;
 
-                    if (_currCrvPtsLeft == 0)
-                    {
-                        _currTmpBzrCurve.TryRender();
-                        _activeLayer.AddCurve(_currTmpBzrCurve);
-                        _currTmpBzrCurve = null;
-                        GeomObjectFactory.GetHelpPanel().SetText();
-                        _currState = UserActionState.Default;
+                        if (_currCrvPtsLeft == 0)
+                        {
+                            _currTmpBzrCurve.TryRender();
+                            _activeLayer.AddCurve(_currTmpBzrCurve);
+                            _currTmpBzrCurve = null;
+                            GeomObjectFactory.GetHelpPanel().SetText();
+                            _currState = UserActionState.Default;
+                        }
+                        else
+                        {
+                            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                        }
                     }
-                    else
+                    else if (_currTmpCircArc != null)
                     {
-                        GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                        Transform ctlPt = GeomObjectFactory.CreateCtlPt(placePt);
+                        ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
+                        ctlPt.SetParent(_currTmpCircArc.transform);
+                        _currTmpCircArc.AppendCtlPt(ctlPtObj);
+                        --_currCrvPtsLeft;
+
+                        if (_currCrvPtsLeft == 0)
+                        {
+                            _currTmpCircArc.TryRender();
+                            _activeLayer.AddCurve(_currTmpCircArc);
+                            _currTmpCircArc = null;
+                            GeomObjectFactory.GetHelpPanel().SetText();
+                            _currState = UserActionState.Default;
+                        }
+                        else
+                        {
+                            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                        }
                     }
                 }
 
             }
-        }
-        else if (_currTmpCircArc != null && _currCrvPtsLeft > 0)
-        {
-            Debug.Log("Circular arc not implemented yet.");
         }
         else
         {
@@ -705,6 +725,18 @@ public class GeometryManager : MonoBehaviour
             _currTmpBzrCurve = GeomObjectFactory.CreateBezierCurve();
             _currCrvPtsLeft = 4;
             _currCreatingObject = "4-point curve";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+            _currState = UserActionState.CreateCurve;
+        }
+    }
+
+    public void StartCreateCircularArc()
+    {
+        if (_currTmpBzrCurve == null && _currTmpCircArc == null)
+        {
+            _currTmpCircArc = GeomObjectFactory.CreateCircularArc();
+            _currCrvPtsLeft = 3;
+            _currCreatingObject = "Circular arc\nPoint order is: Start point, Center, End Point";
             GeomObjectFactory.GetHelpPanel().SetText(HelpString);
             _currState = UserActionState.CreateCurve;
         }

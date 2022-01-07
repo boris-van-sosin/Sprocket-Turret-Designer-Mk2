@@ -124,6 +124,16 @@ public static class GeomObjectFactory
         return _prototypes.GetUploadedDesignImage();
     }
 
+    public static RectTransform GetMenuPanel()
+    {
+        return _prototypes.GetMenuPanel();
+    }
+
+    public static RectTransform GetInstructionsPanel()
+    {
+        return _prototypes.GetInstructionsPanel();
+    }
+
     public static Material GetCurveMtlDefault()
     {
         return _prototypes.GetCurveMtlDefault();

@@ -28,6 +28,8 @@ public class ObjectPrototypes : MonoBehaviour
     public Toggle[] HullPreviewToggleObjects;
     public Transform HullPreviewVisualObjects;
     public UnityEngine.UI.Image UploadedDesignImage;
+    public RectTransform MenuPanel;
+    public RectTransform InstructionsPanel;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
     public Material CtlPtMtlDefault;
@@ -148,6 +150,16 @@ public class ObjectPrototypes : MonoBehaviour
     public UnityEngine.UI.Image GetUploadedDesignImage()
     {
         return UploadedDesignImage;
+    }
+
+    public RectTransform GetMenuPanel()
+    {
+        return MenuPanel;
+    }
+
+    public RectTransform GetInstructionsPanel()
+    {
+        return InstructionsPanel;
     }
 
     public Material GetCurveMtlDefault()

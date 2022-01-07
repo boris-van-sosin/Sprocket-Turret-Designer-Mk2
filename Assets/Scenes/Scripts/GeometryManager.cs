@@ -1346,6 +1346,18 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
+    public void ToggleMenu()
+    {
+        RectTransform rt = GeomObjectFactory.GetMenuPanel();
+        rt.gameObject.SetActive(!rt.gameObject.activeInHierarchy);
+    }
+
+    public void ToggleInstructions()
+    {
+        RectTransform rt = GeomObjectFactory.GetInstructionsPanel();
+        rt.gameObject.SetActive(!rt.gameObject.activeInHierarchy);
+    }
+
     void OnDrawGizmos()
     {
         foreach (var line in _lineGizmos)

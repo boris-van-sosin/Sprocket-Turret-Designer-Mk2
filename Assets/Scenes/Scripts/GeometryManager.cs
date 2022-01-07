@@ -21,7 +21,12 @@ public class GeometryManager : MonoBehaviour
         RotateCurve,
         StartScaleCurve,
         StartScaleCurveSelectPoint,
-        ScaleCurve
+        ScaleCurve,
+        StartScaleLayer,
+        ScaleLayer,
+        StartGlobalScale,
+        GlobalScale,
+        ChangeLayerElevation
     }
 
     private enum TransformType
@@ -95,6 +100,14 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleTransformCurve(TransformType.Scale, TransformPhase.PivotSelected);
             }
+            else if (_currState == UserActionState.StartGlobalScale)
+            {
+                HandleScaleLayer(true, TransformPhase.Start);
+            }
+            else if (_currState == UserActionState.StartScaleLayer)
+            {
+                HandleScaleLayer(false, TransformPhase.Start);
+            }
         }
         else if (Input.GetMouseButton(0))
         {
@@ -123,6 +136,18 @@ public class GeometryManager : MonoBehaviour
             {
                 HandleTransformCurve(TransformType.Scale, TransformPhase.InTransform);
             }
+            else if (_currState == UserActionState.GlobalScale)
+            {
+                HandleScaleLayer(true, TransformPhase.InTransform);
+            }
+            else if (_currState == UserActionState.ScaleLayer)
+            {
+                HandleScaleLayer(false, TransformPhase.InTransform);
+            }
+            else if (_currState == UserActionState.ChangeLayerElevation)
+            {
+                HandleChangeLayerElevation();
+            }
         }
         else if (Input.GetMouseButtonUp(0))
         {
@@ -149,6 +174,18 @@ public class GeometryManager : MonoBehaviour
             else if (_currState == UserActionState.ScaleCurve)
             {
                 HandleTransformCurve(TransformType.Scale, TransformPhase.Finish);
+            }
+            else if (_currState == UserActionState.GlobalScale)
+            {
+                HandleScaleLayer(true, TransformPhase.Finish);
+            }
+            else if (_currState == UserActionState.ScaleLayer)
+            {
+                HandleScaleLayer(false, TransformPhase.Finish);
+            }
+            else if (_currState == UserActionState.ChangeLayerElevation)
+            {
+                HandleFinishChangeLayerElevation();
             }
         }
     }
@@ -256,6 +293,7 @@ public class GeometryManager : MonoBehaviour
         RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.CurvesLayerMask | GlobalData.ControlPtsLayerMask | GlobalData.GizmosLayerMask);
         bool selectedCrv = false;
         LayerPlane bestHitLayer = null;
+        LayerUpDownGizmo bestHitUpDownGizmo = null;
         foreach (RaycastHit hit in hits)
         {
             CurveGeomBase hitCrv;
@@ -291,7 +329,15 @@ public class GeometryManager : MonoBehaviour
             }
             else if ((hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) != null)
             {
-                bestHitLayer = hitLayer;
+                LayerUpDownGizmo upDownGizmo;
+                if ((upDownGizmo = hit.collider.GetComponent<LayerUpDownGizmo>()) != null && upDownGizmo.ContainingLayer == _activeLayer)
+                {
+                    bestHitUpDownGizmo = upDownGizmo;
+                }
+                else
+                {
+                    bestHitLayer = hitLayer;
+                }
             }
         }
 
@@ -318,6 +364,12 @@ public class GeometryManager : MonoBehaviour
                     _activeLayer.SetSelected(true);
                 }
                 GeomObjectFactory.GetLayerActionPanel().AttachLayer(_activeLayer);
+            }
+            else if (bestHitUpDownGizmo != null)
+            {
+                _dragOrigin = r.origin;
+                _layerOrigElevation = _activeLayer.Elevation;
+                _currState = UserActionState.ChangeLayerElevation;
             }
         }
     }
@@ -694,6 +746,103 @@ public class GeometryManager : MonoBehaviour
         }
     }
 
+    private void HandleScaleLayer(bool global, TransformPhase phase)
+    {
+        Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
+        RaycastHit? bestHit = null;
+        ControlPoint snapCtlPt = null;
+        LayerAxis snapAxis = null;
+        foreach (RaycastHit hit in hits)
+        {
+            ControlPoint hitCtlPt;
+            LayerAxis hitAxis;
+            LayerPlane hitLayer;
+            if ((hitCtlPt = hit.collider.GetComponent<ControlPoint>()) != null && hitCtlPt != _currEditingCtlPt && _activeLayer.ContainsCtlPt(hitCtlPt))
+            {
+                snapCtlPt = hitCtlPt;
+                bestHit = hit;
+            }
+            else if (snapCtlPt == null && (hitAxis = hit.collider.GetComponent<LayerAxis>()) && hitAxis.ContainingLayer == _activeLayer)
+            {
+                snapAxis = hitAxis;
+                bestHit = hit;
+            }
+            else if (snapCtlPt == null && (hitLayer = hit.collider.GetComponentInParent<LayerPlane>()) == _activeLayer)
+            {
+                bestHit = hit;
+            }
+        }
+
+        if (bestHit.HasValue)
+        {
+            Vector3 pt = snapCtlPt != null ? snapCtlPt.transform.position : (snapAxis != null ? new Vector3(0f, snapAxis.ContainingLayer.Elevation, bestHit.Value.point.z) : bestHit.Value.point);
+            if (phase == TransformPhase.Start)
+            {
+                _dragOrigin = pt;
+                if (global)
+                {
+                    foreach (LayerPlane layer in _layers)
+                    {
+                        if (_globalScaleElevation)
+                        {
+                            _layerElevationsOrig.Clear();
+                            _layerElevationsOrig.AddRange(_layers.Select(l => l.Elevation));
+                        }
+                        layer.StartUniformScale();
+                    }
+                }
+                else
+                {
+                    _activeLayer.StartUniformScale();
+                }
+            }
+            else
+            {
+                Vector3 origVec = new Vector3(_dragOrigin.x, 0f, _dragOrigin.z);
+                Vector3 vec = new Vector3(pt.x, 0f, pt.z);
+                float factor = Mathf.Sqrt(vec.sqrMagnitude / origVec.sqrMagnitude);
+                if (global)
+                {
+                    for (int i = 0; i < _layers.Count; ++i)
+                    {
+                        if (_globalScaleElevation)
+                        {
+                            _layers[i].Elevation = _layerElevationsOrig[i] * factor;
+                        }
+                        _layers[i].UniformScale(factor);
+                    }
+                }
+                else
+                {
+                    _activeLayer.UniformScale(factor);
+                }
+                GeomObjectFactory.GetLayerActionPanel().UpdateElevationFromLayer();
+            }
+        }
+
+        if (phase != TransformPhase.Finish)
+        {
+            _currState = global ? UserActionState.GlobalScale : UserActionState.ScaleLayer;
+        }
+        else
+        {
+            _currState = UserActionState.SelectedCurve;
+        }
+    }
+
+    private void HandleChangeLayerElevation()
+    {
+        Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
+        _activeLayer.Elevation = _layerOrigElevation + (r.origin.y - _dragOrigin.y);
+        GeomObjectFactory.GetLayerActionPanel().UpdateElevationFromLayer();
+    }
+
+    private void HandleFinishChangeLayerElevation()
+    {
+        _currState = UserActionState.Default;
+    }
+
     public void StartCreateLine()
     {
         if (_currTmpBzrCurve == null && _currTmpCircArc == null)
@@ -876,6 +1025,7 @@ public class GeometryManager : MonoBehaviour
         {
             Debug.LogWarning("Tried to scale layer other than active layer");
         }
+        _currState = UserActionState.StartScaleLayer;
     }
 
     public void DuplicateLayer()
@@ -1004,6 +1154,12 @@ public class GeometryManager : MonoBehaviour
     {
         Transform previewObj = GeomObjectFactory.GetPreviewObject();
         previewObj.gameObject.SetActive(false);
+    }
+
+    public void StartGlobalScale(bool withElevation)
+    {
+        _currState = UserActionState.StartGlobalScale;
+        _globalScaleElevation = withElevation;
     }
 
     public void DownloadStructureDef()
@@ -1192,8 +1348,11 @@ public class GeometryManager : MonoBehaviour
     private Vector3 _dragCtlPtOldPos;
     private Vector3 _scaleRotatePoint;
     private List<Vector3> _transformCurveOrigPts = new List<Vector3>();
+    private List<float> _layerElevationsOrig = new List<float>();
     private float _dragStartTime = 0f;
     private bool _enableDrag = false;
     private bool _symmetricMode = true;
+    private bool _globalScaleElevation = false;
+    private float _layerOrigElevation;
     private static readonly float _dragDelay = 0.5f;
 }

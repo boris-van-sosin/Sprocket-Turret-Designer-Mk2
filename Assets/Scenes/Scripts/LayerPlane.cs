@@ -230,7 +230,54 @@ public class LayerPlane : MonoBehaviour
         _curves.Clear();
     }
 
+    public void StartUniformScale()
+    {
+        bool anyRemoved;
+        do
+        {
+            anyRemoved = false;
+            foreach (CurveGeomBase crv in _backupControlPoints.Keys)
+            {
+                if (!_curves.Contains(crv))
+                {
+                    _backupControlPoints.Remove(crv);
+                    anyRemoved = true;
+                    break;
+                }
+            }
+        } while (anyRemoved);
+
+        foreach (CurveGeomBase crv in _curves)
+        {
+            if (_backupControlPoints.ContainsKey(crv))
+            {
+                _backupControlPoints[crv].Clear();
+                _backupControlPoints[crv].AddRange(crv.CtlPts.Select(p => p.position));
+            }
+            else
+            {
+                _backupControlPoints.Add(crv, crv.CtlPts.Select(p => p.position).ToList());
+            }
+            
+        }
+    }
+
+    public void UniformScale(float factor)
+    {
+        foreach (CurveGeomBase crv in _curves)
+        {
+            for (int i = 0; i < crv.CtlPts.Count; ++i)
+            {
+                crv.CtlPts[i].position = _backupControlPoints[crv][i] * factor;
+                crv.UpdateControlPoint(crv.CtlPts[i].GetComponent<ControlPoint>());
+            }
+            crv.TryRender();
+        }
+    }
+
     public IReadOnlyCollection<CurveGeomBase> Curves => _curves;
+
+    private Dictionary<CurveGeomBase, List<Vector3>> _backupControlPoints = new Dictionary<CurveGeomBase, List<Vector3>>();
 
     public Transform PlaneObject;
     public Transform UpArrow;

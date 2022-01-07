@@ -38,7 +38,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
-                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
+                    if (thicknessMap != null) { thicknessMap.Add(i == 0 ? floorThickness : (i == processed.NumLayers - 1 ? roofThickness : frontThickness)); }
 
                     if (i == 0)
                     {
@@ -86,7 +86,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
-                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
+                    if (thicknessMap != null) { thicknessMap.Add(i == 0 ? floorThickness : (i == processed.NumLayers - 1 ? roofThickness : sideThickness)); }
 
                     if (i == 0)
                     {
@@ -134,7 +134,7 @@ public static class MeshGenerator
                 if (currCrv.Domain.Item1 <= t && t <= currCrv.Domain.Item2)
                 {
                     quads.Vertices.Add(currCrv.Eval(t));
-                    if (thicknessMap != null) { thicknessMap.Add(frontThickness); }
+                    if (thicknessMap != null) { thicknessMap.Add(i == 0 ? floorThickness : (i == processed.NumLayers - 1 ? roofThickness : rearThickness)); }
 
                     if (i == 0)
                     {

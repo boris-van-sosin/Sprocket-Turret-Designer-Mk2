@@ -16,6 +16,14 @@ public class LayerActions : MonoBehaviour
         gameObject.SetActive(true);
     }
 
+    public void UpdateElevationFromLayer()
+    {
+        if (_attachedLayer != null)
+        {
+            ElevationTextBox.SetTextWithoutNotify(_attachedLayer.Elevation.ToString());
+        }
+    }
+
     public void Release()
     {
         _attachedLayer = null;
@@ -24,7 +32,7 @@ public class LayerActions : MonoBehaviour
 
     public void StartScale()
     {
-
+        GeomObjectFactory.GetGeometryManager().StartScaleLayer(_attachedLayer);
     }
 
     public void Duplicate()

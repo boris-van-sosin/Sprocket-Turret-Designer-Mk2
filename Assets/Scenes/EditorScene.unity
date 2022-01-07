@@ -4970,26 +4970,26 @@ MonoBehaviour:
     a connected chain of curves that starts and ends at the center line (appears
     in red). Don't worry about symmetry. Construct only the right side of the turret
     (bottom half of the plane in the default view), and the app will automatically
-    mirror it to form a complete symmetrical turret.\r\n\nHint 1: when editing segments,
-    points can snap to other points on other segments. This should help you form
-    connected chains.\r\nHint 2: after you are done with a layer, you can either
-    create a new empty layer, or duplicate the top layer.\r\n\r\nTools:\r\nYou can
-    construct the turret out of 2-point lines, 3-point curves, 4-point curves, and
-    circular arcs. After you place the segments, you can edit them. You can also
+    mirror it to form a complete symmetrical turret.\r\n\r\nHint 1: when editing
+    segments, points can snap to other points on other segments. This should help
+    you form connected chains.\r\nHint 2: after you are done with a layer, you can
+    either create a new empty layer, or duplicate the top layer.\r\n\r\nTools:\r\nYou
+    can construct the turret out of 2-point lines, 3-point curves, 4-point curves,
+    and circular arcs. After you place the segments, you can edit them. You can also
     move, rotate and scale segments individually, or scale an entire layer, or the
     entire model, globally.\r\n\r\nArmour:\r\nYou can set the armour values for the
     turret. The armour is roughly divided into sections: front, side, rear, floor
     and roof. You can set armour values individually for each section.\r\n\r\nGenerating
     the turret:\r\nAfter you finish creating the turret (recall that you need at
     least 2 layers with fully connected chains of segments), you can generate a preview
-    of it. If you have already uploaded the tank blueprint, you can apply the turret\r
+    of it. If you have already uploaded the tank blueprint, you can apply the turret\r\n
     to the tank, and download the modified design using the \"Generate & Download\"
     button.\r\n\r\nSaving and loading:\r\nThe \"Donwload deinition\" button downloads
     a data file of your turret design to save your work for back up or for continuing
     to work on it later. You can also upload a previously saved turret design. Note
-    that this is NOT in the Sprocket format, so\r do not try to copy these data files
-    into Sprocket.\r\n\nHint 3: this tool is experimental, and has not been fully
-    idiot-proofed. Save you work often.\n\r\nUploading a tank blueprint:\r\nAfter
+    that this is NOT in the Sprocket format, so\r\n do not try to copy these data
+    files into Sprocket.\r\n\r\nHint 3: this tool is experimental, and has not been
+    fully idiot-proofed. Save you work often.\r\n\r\nUploading a tank blueprint:\r\nAfter
     you are happy with the turret design, use the \"Upload blueprint\" button to
     upload a tank blueprint from Sprocket to to which the turret will be applied.
     The tank must already have a turret called \"Turret 1\", and the app will override
@@ -10731,7 +10731,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 1300}
+  m_SizeDelta: {x: 0, y: 1360}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1787575026
 GameObject:

@@ -1142,7 +1142,7 @@ public static class MeshGenerator
         QuadMesh res = new QuadMesh()
         {
             Vertices = new List<Vector3>() { bottomFrontRight, bottomRearRight, bottomFrontLeft, bottomRearLeft, topFrontRight, topRearRight, topFrontLeft, topRearLeft },
-            Quads = new List<(int, int, int, int)>() { (0, 2, 3 ,1), (4, 5, 7, 6), (0, 4, 6, 2), (1, 3, 7, 5), (0, 1, 5, 6), (2, 6, 7, 3) },
+            Quads = new List<(int, int, int, int)>() { (0, 1, 3 ,2), (4, 6, 7, 5), (0, 2, 6, 4), (1, 5, 7, 3), (0, 4, 5, 1), (2, 3, 7, 6) },
             MeshSize = (4, 4)
         };
         return res;

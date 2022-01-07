@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public static class GeomObjectFactory
 {
@@ -111,6 +112,11 @@ public static class GeomObjectFactory
     public static UISliderNum[] GetArmourValueSliders()
     {
         return _prototypes.ArmourObjects;
+    }
+
+    public static (UISliderNum[], Toggle[], Transform) GetHullPreviewObjects()
+    {
+        return _prototypes.GetHullPreviewObjects();
     }
 
     public static UnityEngine.UI.Image GetUploadedDesignImage()

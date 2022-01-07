@@ -14,9 +14,14 @@ DownloadStringAsFile : function (text, fileType, fileName)
 		setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
 	},
 
-SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
+SetTurretData: function (tankBlueprint_stringPtr, structData_stringPtr)
 	{
 		let tankObj = JSON.parse(UTF8ToString(tankBlueprint_stringPtr));
+		let structDataObj = JSON.parse(UTF8ToString(structData_stringPtr));
+		
+		console.log("Got structure for export:");
+		console.log(structDataObj);
+		
 		for (let i in tankObj.blueprints)
 		{
 			if (tankObj.blueprints[i].id == "Compartment")
@@ -26,11 +31,20 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 				{
 					console.log("Tank blueprint before:");
 					console.log(tankObj);
-					let modifiedTurret = SetTurretGeometry(compartmentData, turretData_stringPtr);
+					
+					let modifiedTurret = SetCompartmentGeometry(compartmentData, structDataObj.Turret);
 					tankObj.blueprints[i].data = JSON.stringify(modifiedTurret);
 					console.log("Tank blueprint after:");
 					console.log(tankObj);
-					break;
+				}
+				else if ("Hull" in structDataObj && compartmentData.name == "Hull")
+				{
+					console.log("Tank blueprint before:");
+					console.log(tankObj);
+					let modifiedTurret = SetCompartmentGeometry(compartmentData, structDataObj.Hull);
+					tankObj.blueprints[i].data = JSON.stringify(modifiedTurret);
+					console.log("Tank blueprint after:");
+					console.log(tankObj);
 				}
 			}
 		}
@@ -52,40 +66,39 @@ SetTurretData: function (tankBlueprint_stringPtr, turretData_stringPtr)
 			setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
 		}
 		
-		function SetTurretGeometry(turretObj, turretData_stringPtr)
+		function SetCompartmentGeometry(compartmentObj, exportDataObj)
 		{
-			let turretDataObj = JSON.parse(UTF8ToString(turretData_stringPtr));
-			console.log("Will set turret data:");
-			console.log(turretDataObj);
+			console.log("Will set compartment data to " + compartmentObj.name);
+			console.log(exportDataObj);
 			
-			let vertices = new Array(turretDataObj.Vertices.length * 3);
-			for (let i in turretDataObj.Vertices)
+			let vertices = new Array(exportDataObj.Vertices.length * 3);
+			for (let i in exportDataObj.Vertices)
 			{
-				vertices[i * 3 + 0] = turretDataObj.Vertices[i].x;
-				vertices[i * 3 + 1] = turretDataObj.Vertices[i].y;
-				vertices[i * 3 + 2] = turretDataObj.Vertices[i].z;
+				vertices[i * 3 + 0] = exportDataObj.Vertices[i].x;
+				vertices[i * 3 + 1] = exportDataObj.Vertices[i].y;
+				vertices[i * 3 + 2] = exportDataObj.Vertices[i].z;
 			}
 			
-			let dups = new Array(turretDataObj.Dups.length);
-			for (let i in turretDataObj.Dups)
+			let dups = new Array(exportDataObj.Dups.length);
+			for (let i in exportDataObj.Dups)
 			{
-				dups[i] = turretDataObj.Dups[i].Array;
+				dups[i] = exportDataObj.Dups[i].Array;
 			}
 			
-			let thicknessMap = turretDataObj.ThicknessMap.slice();
+			let thicknessMap = exportDataObj.ThicknessMap.slice();
 			
-			let faces = new Array(turretDataObj.Faces.length);
-			for (let i in turretDataObj.Faces)
+			let faces = new Array(exportDataObj.Faces.length);
+			for (let i in exportDataObj.Faces)
 			{
-				faces[i] = turretDataObj.Faces[i].Array;
+				faces[i] = exportDataObj.Faces[i].Array;
 			}
 			
-			turretObj.compartment.points = vertices;
-			turretObj.compartment.sharedPoints = dups;
-			turretObj.compartment.thicknessMap = thicknessMap;
-			turretObj.compartment.faceMap = faces;
+			compartmentObj.compartment.points = vertices;
+			compartmentObj.compartment.sharedPoints = dups;
+			compartmentObj.compartment.thicknessMap = thicknessMap;
+			compartmentObj.compartment.faceMap = faces;
 			
-			return turretObj;
+			return compartmentObj;
 		}
 	},
 

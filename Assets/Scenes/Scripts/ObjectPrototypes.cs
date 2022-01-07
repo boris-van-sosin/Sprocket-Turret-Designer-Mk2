@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ObjectPrototypes : MonoBehaviour
 {
@@ -23,6 +24,9 @@ public class ObjectPrototypes : MonoBehaviour
     public UploadFileReceiver FileReceiver;
     public Transform PreviewObject;
     public UISliderNum[] ArmourObjects;
+    public UISliderNum[] HullPreviewSliderObjects;
+    public Toggle[] HullPreviewToggleObjects;
+    public Transform HullPreviewVisualObjects;
     public UnityEngine.UI.Image UploadedDesignImage;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
@@ -135,6 +139,12 @@ public class ObjectPrototypes : MonoBehaviour
     {
         return ArmourObjects;
     }
+
+    public (UISliderNum[], Toggle[], Transform) GetHullPreviewObjects()
+    {
+        return (HullPreviewSliderObjects, HullPreviewToggleObjects, HullPreviewVisualObjects);
+    }
+
     public UnityEngine.UI.Image GetUploadedDesignImage()
     {
         return UploadedDesignImage;

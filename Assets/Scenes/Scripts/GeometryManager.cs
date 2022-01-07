@@ -48,6 +48,12 @@ public class GeometryManager : MonoBehaviour
     void Start()
     {
         CreateEmptyLayer();
+        (UISliderNum[], UnityEngine.UI.Toggle[], Transform) hullPreview = GeomObjectFactory.GetHullPreviewObjects();
+        foreach (var slider in hullPreview.Item1)
+        {
+            slider.SliderObj.onValueChanged.AddListener(new UnityEngine.Events.UnityAction<float>((f) => { OnHullPreviewChange(); }));
+        }
+        hullPreview.Item2[0].onValueChanged.AddListener(new UnityEngine.Events.UnityAction<bool>((b) => { OnHullPreviewChange(); }));
     }
 
     // Update is called once per frame
@@ -1232,9 +1238,20 @@ public class GeometryManager : MonoBehaviour
                 rearArmour = Mathf.RoundToInt(armourSliders[2].Value),
                 floorArmour = Mathf.RoundToInt(armourSliders[3].Value),
                 roofArmour = Mathf.RoundToInt(armourSliders[4].Value);
-            (MeshGenerator.QuadMesh, StructureExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, frontArmour, sideArmour, rearArmour, floorArmour, roofArmour);
+            (MeshGenerator.QuadMesh, CompartmentExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, frontArmour, sideArmour, rearArmour, floorArmour, roofArmour);
             SetHexMeshPreview(meshData.Item1);
-            JavascripAdapter.SetTurretDataAndDownload(_tankData, JsonUtility.ToJson(meshData.Item2));
+
+            StructureExportData exportData = new StructureExportData() { Turret = meshData.Item2, Hull = null };
+
+            (UISliderNum[], UnityEngine.UI.Toggle[], Transform) hullPreview = GeomObjectFactory.GetHullPreviewObjects();
+            if (hullPreview.Item2[1].isOn)
+            {
+                Vector3 dimensions = new Vector3(hullPreview.Item1[1].Value, hullPreview.Item1[2].Value, hullPreview.Item1[0].Value);
+                MeshGenerator.QuadMesh boxMesh = MeshGenerator.GenerateBox(dimensions);
+                exportData.Hull = MeshGenerator.AssignToExportData2(boxMesh, null);
+            }
+
+            JavascripAdapter.SetTurretDataAndDownload(_tankData, JsonUtility.ToJson(exportData));
         }
     }
 
@@ -1304,6 +1321,29 @@ public class GeometryManager : MonoBehaviour
         if (lines != null) { _lineGizmos.AddRange(lines); }
         _pointGizmos.Clear();
         if (points != null) { _pointGizmos.AddRange(points); }
+    }
+
+    private void OnHullPreviewChange()
+    {
+        DrawHullPreview();
+    }
+
+    private void DrawHullPreview()
+    {
+        (UISliderNum[], UnityEngine.UI.Toggle[], Transform) hullPreview = GeomObjectFactory.GetHullPreviewObjects();
+        if (hullPreview.Item2[0].isOn)
+        {
+            Vector3 dimensions = new Vector3(hullPreview.Item1[1].Value, hullPreview.Item1[2].Value, hullPreview.Item1[0].Value);
+            MeshGenerator.QuadMesh boxMesh = MeshGenerator.GenerateBox(dimensions);
+            MeshFilter mf = hullPreview.Item3.GetComponent<MeshFilter>();
+            mf.mesh = MeshGenerator.AssignToMesh(boxMesh);
+            hullPreview.Item3.position = new Vector3(0f, -dimensions.y, 0f);
+            hullPreview.Item3.gameObject.SetActive(true);
+        }
+        else
+        {
+            hullPreview.Item3.gameObject.SetActive(false);
+        }
     }
 
     void OnDrawGizmos()

@@ -11,7 +11,7 @@ public static class MeshGenerator
         return GenerateQuadMesh(layers, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
     }
 
-    public static (QuadMesh, StructureExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
+    public static (QuadMesh, CompartmentExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
     {
         ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg, true);
 
@@ -198,7 +198,7 @@ public static class MeshGenerator
 
         GeomObjectFactory.GetGeometryManager().AssignGizmos(edges.Select(e => (quads.Vertices[e.Item1], quads.Vertices[e.Item2], UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))), quads.Vertices.Select(v => (v, UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))));
 
-        StructureExportData exportData = forExport ? AssignToExportData2(quads, processed.NumLayers, thicknessMap) : null;
+        CompartmentExportData exportData = forExport ? AssignToExportData2(quads, thicknessMap) : null;
         return (quads, exportData);
     }
 
@@ -929,7 +929,7 @@ public static class MeshGenerator
         return m;
     }
 
-    private static StructureExportData AssignToExportData(QuadMesh quads, int numLayers, List<int> thicknessMap)
+    private static CompartmentExportData AssignToExportData(QuadMesh quads, int numLayers, List<int> thicknessMap)
     {
         Vector3[] vertices = new Vector3[quads.Vertices.Count + 2];
         for (int i = 0; i < quads.Vertices.Count; ++i)
@@ -940,7 +940,7 @@ public static class MeshGenerator
         vertices[quads.Vertices.Count + 1] = new Vector3(0f, quads.Vertices[quads.RoofVertices[0]].y, 0f);
 
         int numWallTriangles = quads.Quads.Count * 2;
-        StructureExportData exportData = new StructureExportData()
+        CompartmentExportData exportData = new CompartmentExportData()
         {
             Vertices = quads.Vertices.ToArray(),
             Faces = new IntArrayContainer[numWallTriangles + 4],
@@ -1042,7 +1042,7 @@ public static class MeshGenerator
         return exportData;
     }
 
-    private static StructureExportData AssignToExportData2(QuadMesh quads, int numLayers, List<int> thicknessMap)
+    public static CompartmentExportData AssignToExportData2(QuadMesh quads, List<int> thicknessMap)
     {
         List<Vector3> vertices = new List<Vector3>(quads.Quads.Count * 4);
         IntArrayContainer[] faces = new IntArrayContainer[quads.Quads.Count];
@@ -1056,10 +1056,20 @@ public static class MeshGenerator
             vertices.Add(quads.Vertices[quads.Quads[i].Item3]);
             vertices.Add(quads.Vertices[quads.Quads[i].Item4]);
 
-            expandedThicknessMap[vertexIdx + 0] = thicknessMap[i];
-            expandedThicknessMap[vertexIdx + 1] = thicknessMap[i];
-            expandedThicknessMap[vertexIdx + 2] = thicknessMap[i];
-            expandedThicknessMap[vertexIdx + 3] = thicknessMap[i];
+            if (thicknessMap != null)
+            {
+                expandedThicknessMap[vertexIdx + 0] = thicknessMap[quads.Quads[i].Item1];
+                expandedThicknessMap[vertexIdx + 1] = thicknessMap[quads.Quads[i].Item2];
+                expandedThicknessMap[vertexIdx + 2] = thicknessMap[quads.Quads[i].Item3];
+                expandedThicknessMap[vertexIdx + 3] = thicknessMap[quads.Quads[i].Item4];
+            }
+            else
+            {
+                expandedThicknessMap[vertexIdx + 0] = 10;
+                expandedThicknessMap[vertexIdx + 1] = 10;
+                expandedThicknessMap[vertexIdx + 2] = 10;
+                expandedThicknessMap[vertexIdx + 3] = 10;
+            }
 
             int[] currFace = new int[]
             {
@@ -1076,52 +1086,12 @@ public static class MeshGenerator
         }
 
 
-        int verticesPerLayer = quads.Vertices.Count / numLayers,
-            ptIdx = 0,
-            halfPoints = quads.Vertices.Count / 2,
-            halfLayer = verticesPerLayer / 2,
-            k = 0;
-        bool nextStartOfLayer = true;
-
-        for (int i = 0; i < halfPoints; ++i)
+        for (int i = 0; i < quads.Vertices.Count; ++i)
         {
-            if (i == ptIdx)
-            {
-                if (ptIdx + halfPoints >= quads.Vertices.Count)
-                {
-                    continue;
-                }
-
-                Vector3
-                    pt1 = quads.Vertices[ptIdx],
-                    pt2 = quads.Vertices[ptIdx + halfPoints];
-                if (pt1 != pt2)
-                {
-                    Debug.LogError(string.Format("Points that are suppposed to be dups are not identical. Pt1={0} Pt2={1}", pt1, pt2));
-                }
-
-                MergeDups(ptIdx, dups, quads.Vertices, vertices);
-
-                if (nextStartOfLayer)
-                {
-                    ptIdx += halfLayer - 1;
-                }
-                else
-                {
-                    ptIdx += 1;
-                }
-                nextStartOfLayer = !nextStartOfLayer;
-            }
-            else
-            {
-                for (int m = 0; m <= halfPoints; m += halfPoints)
-                {
-                    MergeDups(i + m, dups, quads.Vertices, vertices);
-                }
-            }
+            MergeDups(i, dups, quads.Vertices, vertices);
         }
 
-        StructureExportData exportData = new StructureExportData()
+        CompartmentExportData exportData = new CompartmentExportData()
         {
             Vertices = vertices.ToArray(),
             Faces = faces,
@@ -1156,6 +1126,26 @@ public static class MeshGenerator
             }
         }
         dups.Add(idx, currDups);
+    }
+
+    public static QuadMesh GenerateBox(Vector3 dimensions)
+    {
+        Vector3
+            bottomFrontRight = new Vector3(dimensions.x / 2f, 0f, -dimensions.z / 2f),
+            bottomRearRight = new Vector3(dimensions.x / 2f, 0f, dimensions.z / 2f),
+            bottomFrontLeft = new Vector3(-dimensions.x / 2f, 0f, -dimensions.z / 2f),
+            bottomRearLeft = new Vector3(-dimensions.x / 2f, 0f, dimensions.z / 2f),
+            topFrontRight = new Vector3(dimensions.x / 2f, dimensions.y, -dimensions.z / 2f),
+            topRearRight = new Vector3(dimensions.x / 2f, dimensions.y, dimensions.z / 2f),
+            topFrontLeft = new Vector3(-dimensions.x / 2f, dimensions.y, -dimensions.z / 2f),
+            topRearLeft = new Vector3(-dimensions.x / 2f, dimensions.y, dimensions.z / 2f);
+        QuadMesh res = new QuadMesh()
+        {
+            Vertices = new List<Vector3>() { bottomFrontRight, bottomRearRight, bottomFrontLeft, bottomRearLeft, topFrontRight, topRearRight, topFrontLeft, topRearLeft },
+            Quads = new List<(int, int, int, int)>() { (0, 2, 3 ,1), (4, 5, 7, 6), (0, 4, 6, 2), (1, 3, 7, 5), (0, 1, 5, 6), (2, 6, 7, 3) },
+            MeshSize = (4, 4)
+        };
+        return res;
     }
 
     public class QuadMesh
@@ -1346,10 +1336,17 @@ public struct IntArrayContainer
 }
 
 [Serializable]
-public class StructureExportData
+public class CompartmentExportData
 {
     public Vector3[] Vertices;
     public int[] ThicknessMap;
     public IntArrayContainer[] Dups;
     public IntArrayContainer[] Faces;
+}
+
+[Serializable]
+public class StructureExportData
+{
+    public CompartmentExportData Hull;
+    public CompartmentExportData Turret;
 }

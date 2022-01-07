@@ -37,7 +37,7 @@ SetTurretData: function (tankBlueprint_stringPtr, structData_stringPtr)
 					console.log("Tank blueprint after:");
 					console.log(tankObj);
 				}
-				else if ("Hull" in structDataObj && compartmentData.name == "Hull")
+				else if ("Hull" in structDataObj && structDataObj.Hull.Faces.length > 0 && compartmentData.name == "Hull")
 				{
 					console.log("Tank blueprint before:");
 					console.log(tankObj);

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -1267,28 +1266,15 @@ public static class MeshGenerator
         Vector3 startTangent = r90 * (circ.Start - circ.Center),
             endTangent = r90 * (circ.End - circ.Center);
 
-        // Equation ssytem:
-        // a1*x + b1*y = c1
-        // a2*x + b2*y = c2
-        float
-            a1 = startTangent.x,
-            b1 = -endTangent.x,
-            c1 = (circ.End - circ.Start).x,
-            a2 = startTangent.z,
-            b2 = -endTangent.z,
-            c2 = (circ.End - circ.Start).z;
-        // Solve via Cramer's rule:
-        // x = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1)
-        // y = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1)
-        float x1 = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1), x2 = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1);
-        Vector3 resPt1 = circ.Start + x1 * startTangent, resPt2 = circ.End + x2 * endTangent;
-        if (resPt1 != resPt2)
-        {
-            Debug.LogError("Something is wrong in line-line intersection computation.");
-        }
+        Vector3 intersectionPt =
+            SolverUtils.ElevateTo3D(
+                    SolverUtils.LineLineIntersect(SolverUtils.ReduceTo2D(circ.Start), SolverUtils.ReduceTo2D(startTangent),
+                                                  SolverUtils.ReduceTo2D(circ.End), SolverUtils.ReduceTo2D(endTangent)),
+                    circ.Start.y);
+
         float angle = Vector3.Angle(startTangent, endTangent);
         float midW = Mathf.Sin(Mathf.Deg2Rad * angle / 2f);
-        List<Vector3> pts = new List<Vector3> { circ.Start, resPt1 * midW, circ.End };
+        List<Vector3> pts = new List<Vector3> { circ.Start, intersectionPt * midW, circ.End };
         List<float> weights = new List<float>() { 1f, midW, 1f};
         return new List<WeightedlBezierCurve<Vector3>>()
         {

@@ -98,8 +98,33 @@ public class CircularArcGeom : CurveGeomBase
         return copy;
     }
 
+    public override Vector3 EvalStartVec()
+    {
+        if (_cltPtsTransforms.Count < 3)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            return _r90 * (_innerCrv.Start - _innerCrv.Center);
+        }
+    }
+
+    public override Vector3 EvalEndVec()
+    {
+        if (_cltPtsTransforms.Count < 3)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            return _r90 * -(_innerCrv.End - _innerCrv.Center);
+        }
+    }
+
     public static float Magnitude(Vector3 vec) => vec.magnitude;
     public static Vector3 Rotate(Vector3 vec, float angle) => Quaternion.AngleAxis(angle, Vector3.up) * vec;
+    private static readonly Quaternion _r90 = Quaternion.AngleAxis(90f, Vector3.up);
 
     private CircularArc<Vector3> _innerCrv = null;
 }

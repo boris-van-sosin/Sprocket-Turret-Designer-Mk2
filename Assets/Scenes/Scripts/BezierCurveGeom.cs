@@ -36,6 +36,32 @@ public class BezierCurveGeom : CurveGeomBase
         return copy;
     }
 
+    public override Vector3 EvalStartVec()
+    {
+        if (_cltPtsTransforms.Count < 2)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            //Debug.Log(string.Format("Start vec: {0} - {1} = {2}", _cltPtsTransforms[1].position, _cltPtsTransforms[0].position, (_cltPtsTransforms[1].position - _cltPtsTransforms[0].position) * (Order - 1)));
+            return (_cltPtsTransforms[1].position - _cltPtsTransforms[0].position) * (Order - 1);
+        }
+    }
+
+    public override Vector3 EvalEndVec()
+    {
+        if (_cltPtsTransforms.Count < 2)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            //Debug.Log(string.Format("End vec: {0} - {1} = {2}", _cltPtsTransforms[_cltPtsTransforms.Count - 1].position, _cltPtsTransforms[_cltPtsTransforms.Count - 2].position, (_cltPtsTransforms[_cltPtsTransforms.Count - 1].position - _cltPtsTransforms[_cltPtsTransforms.Count - 2].position) * (Order - 1)));
+            return (_cltPtsTransforms[_cltPtsTransforms.Count - 1].position - _cltPtsTransforms[_cltPtsTransforms.Count - 2].position) * (Order - 1);
+        }
+    }
+
     public override int Order => _cltPtsTransforms.Count;
 
     private BezierCurve<Vector3> _innerCrv = null;

@@ -209,5 +209,36 @@ public static class SolverUtils
         return new BezierCurve<float>(pts, BlendFloat);
     }
 
+    public static Vector2 LineLineIntersect(Vector2 start1, Vector2 vec1, Vector2 Start2, Vector2 vec2)
+    {
+        float
+            a1 = vec1.x,
+            b1 = -vec2.x,
+            c1 = (Start2 - start1).x,
+            a2 = vec1.y,
+            b2 = -vec2.y,
+            c2 = (Start2 - start1).y;
+        // Solve via Cramer's rule:
+        // x = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1)
+        // y = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1)
+        float x1 = (c1 * b2 - c2 * b1) / (a1 * b2 - a2 * b1), x2 = (a1 * c2 - c1 * a2) / (a1 * b2 - a2 * b1);
+        Vector2 resPt1 = start1 + x1 * vec1, resPt2 = Start2 + x2 * vec2;
+        if (resPt1 != resPt2)
+        {
+            Debug.LogError("Something is wrong in line-line intersection computation.");
+        }
+        return Vector2.Lerp(resPt1, resPt2, 0.5f);
+    }
+
+    public static Vector2 ReduceTo2D(Vector3 v)
+    {
+        return new Vector2(v.x, v.z);
+    }
+
+    public static Vector3 ElevateTo3D(Vector2 v, float y)
+    {
+        return new Vector3(v.x, y, v.y);
+    }
+
     public static float BlendFloat(float x, float a, float y, float b) => x * a + y * b;
 }

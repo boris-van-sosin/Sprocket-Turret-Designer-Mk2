@@ -87,6 +87,30 @@ public class BSplineCurveGeom : CurveGeomBase
 
         return copy;
     }
+
+    public override Vector3 EvalStartVec()
+    {
+        if (_cltPtsTransforms.Count < 2)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            return (_cltPtsTransforms[1].position - _cltPtsTransforms[0].position) * (Order - 1);
+        }
+    }
+
+    public override Vector3 EvalEndVec()
+    {
+        if (_cltPtsTransforms.Count < 2)
+        {
+            return Vector3.zero;
+        }
+        else
+        {
+            return (_cltPtsTransforms[_cltPtsTransforms.Count - 1].position - _cltPtsTransforms[_cltPtsTransforms.Count - 2].position) * (Order - 1);
+        }
+    }
     public IReadOnlyList<float> KnotVector => _kv;
 
     private int _order;

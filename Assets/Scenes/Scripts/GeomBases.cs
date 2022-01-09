@@ -99,6 +99,8 @@ public abstract class CurveGeomBase : MonoBehaviour
     public Vector3 Eval(float t) => InnerCurve.Eval(t);
     public Vector3 EvalStart() => InnerCurve.Eval(Domain.Item1);
     public Vector3 EvalEnd() => InnerCurve.Eval(Domain.Item2);
+    public abstract Vector3 EvalStartVec();
+    public abstract Vector3 EvalEndVec();
     protected virtual (float, float) Domain => InnerCurve.Domain;
     protected abstract ICurve<Vector3> InnerCurve { get; }
     public IImmutableCurve<Vector3> GetCurve() => InnerCurve;

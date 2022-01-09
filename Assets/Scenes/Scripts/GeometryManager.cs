@@ -194,6 +194,17 @@ public class GeometryManager : MonoBehaviour
                 HandleFinishChangeLayerElevation();
             }
         }
+        else if(Input.GetMouseButtonDown(1))
+        {
+            if (_currState == UserActionState.CreateCurve)
+            {
+                CancelCreateCurve();
+            }
+            else
+            {
+                CancelAll();
+            }
+        }
     }
 
     private void HandleCreateStep()
@@ -201,7 +212,8 @@ public class GeometryManager : MonoBehaviour
         if ((_currTmpBzrCurve != null || _currTmpCircArc != null) && _currCrvPtsLeft > 0)
         {
             Ray r = GeomObjectFactory.GetCameraControl().UserCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit[] hits = Physics.RaycastAll(r, 1000f, GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask);
+            int layerMask = _creatingSmoothConnector ? GlobalData.ControlPtsLayerMask : GlobalData.LayersLayerMask | GlobalData.ControlPtsLayerMask;
+            RaycastHit[] hits = Physics.RaycastAll(r, 1000f, layerMask);
             if (hits != null)
             {
                 RaycastHit? bestHit = null;
@@ -245,20 +257,134 @@ public class GeometryManager : MonoBehaviour
                         Transform ctlPt = GeomObjectFactory.CreateCtlPt(placePt);
                         ControlPoint ctlPtObj = ctlPt.GetComponent<ControlPoint>();
                         ctlPt.SetParent(_currTmpBzrCurve.transform);
-                        _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
-                        --_currCrvPtsLeft;
 
-                        if (_currCrvPtsLeft == 0)
+                        if (!_creatingSmoothConnector)
                         {
-                            _currTmpBzrCurve.TryRender();
-                            _activeLayer.AddCurve(_currTmpBzrCurve);
-                            _currTmpBzrCurve = null;
-                            GeomObjectFactory.GetHelpPanel().SetText();
-                            _currState = UserActionState.Default;
+                            _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
+                            --_currCrvPtsLeft;
+
+                            if (_currCrvPtsLeft == 0)
+                            {
+                                _currTmpBzrCurve.TryRender();
+                                _activeLayer.AddCurve(_currTmpBzrCurve);
+                                _currTmpBzrCurve = null;
+                                GeomObjectFactory.GetHelpPanel().SetText();
+                                _currState = UserActionState.Default;
+                            }
+                            else
+                            {
+                                GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
+                            }
                         }
                         else
                         {
-                            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                            if (snapCtlPt == null)
+                            {
+                                Debug.LogError("Selected something other than a control point when creating a smooth connector.");
+                                CancelCreateCurve();
+                                return;
+                            }
+
+                            if (_currCrvPtsLeft == 2)
+                            {
+                                _smoothConnectFirstEndpoint = snapCtlPt;
+                                _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
+                                ctlPt.SetParent(_currTmpBzrCurve.transform);
+                                --_currCrvPtsLeft;
+                                GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
+                            }
+                            else if (_currCrvPtsLeft == 1)
+                            {
+                                if (_smoothConnectFirstEndpoint == null)
+                                {
+                                    Debug.LogError("No first curve to connect.");
+                                    CancelCreateCurve();
+                                    return;
+
+                                }
+
+                                bool firstStart = false, firstEnd = false, secondStart = false, secondEnd = false;
+                                Vector3 startVec = Vector3.zero, endVec = Vector3.zero;
+
+                                for (int i = 0; i < _smoothConnectFirstEndpoint.ContainingCurve.CtlPts.Count; i += _smoothConnectFirstEndpoint.ContainingCurve.CtlPts.Count - 1)
+                                {
+                                    if (_smoothConnectFirstEndpoint.transform == _smoothConnectFirstEndpoint.ContainingCurve.CtlPts[i])
+                                    {
+                                        if (i == 0)
+                                        {
+                                            firstStart = true;
+                                            startVec = _smoothConnectFirstEndpoint.ContainingCurve.EvalStartVec();
+                                        }
+                                        else
+                                        {
+                                            firstEnd = true;
+                                            startVec = _smoothConnectFirstEndpoint.ContainingCurve.EvalEndVec();
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                for (int i = 0; i < snapCtlPt.ContainingCurve.CtlPts.Count; i += snapCtlPt.ContainingCurve.CtlPts.Count - 1)
+                                {
+                                    if (snapCtlPt.transform == snapCtlPt.ContainingCurve.CtlPts[i])
+                                    {
+                                        if (i == 0)
+                                        {
+                                            secondStart = true;
+                                            endVec = snapCtlPt.ContainingCurve.EvalStartVec();
+                                        }
+                                        else
+                                        {
+                                            secondEnd = true;
+                                            endVec = snapCtlPt.ContainingCurve.EvalEndVec();
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                if ((!firstStart && !firstEnd) || (!secondStart && !secondEnd))
+                                {
+                                    Debug.LogError("Failed to find start or end vectors.");
+                                    CancelCreateCurve();
+                                    return;
+                                }
+
+                                //Debug.Log(string.Format("Find intersection: ({0})+a({1}) = ({2})+b({3})", _smoothConnectFirstEndpoint.transform.position, startVec, placePt, endVec));
+
+                                //Debug.DrawLine(_smoothConnectFirstEndpoint.transform.position, _smoothConnectFirstEndpoint.transform.position + (startVec.normalized * 2), Color.cyan, 5f);
+                                //Debug.DrawLine(placePt, placePt + (endVec.normalized * 2), Color.cyan, 5f);
+
+                                Vector3 midPt =
+                                    SolverUtils.ElevateTo3D(
+                                        SolverUtils.LineLineIntersect(
+                                            SolverUtils.ReduceTo2D(_smoothConnectFirstEndpoint.transform.position), SolverUtils.ReduceTo2D(startVec),
+                                            SolverUtils.ReduceTo2D(placePt), SolverUtils.ReduceTo2D(endVec)),
+                                        _smoothConnectFirstEndpoint.transform.position.y);
+
+                                if (float.IsNaN(midPt.x) || float.IsNaN(midPt.z) || float.IsInfinity(midPt.x) || float.IsInfinity(midPt.z))
+                                {
+                                    CancelCreateCurve();
+                                    return;
+                                }
+
+                                ctlPt.position = midPt;
+                                //Debug.Log(string.Format("Find intersection: {0}", midPt));
+                                _currTmpBzrCurve.AppendCtlPt(ctlPtObj);
+                                ctlPt.SetParent(_currTmpBzrCurve.transform);
+
+                                Transform ctlPt2 = GeomObjectFactory.CreateCtlPt(placePt);
+                                ControlPoint ctlPtObj2 = ctlPt2.GetComponent<ControlPoint>();
+                                _currTmpBzrCurve.AppendCtlPt(ctlPtObj2);
+                                ctlPt2.SetParent(_currTmpBzrCurve.transform);
+
+                                --_currCrvPtsLeft;
+
+                                _currTmpBzrCurve.TryRender();
+                                _activeLayer.AddCurve(_currTmpBzrCurve);
+                                _currTmpBzrCurve = null;
+                                GeomObjectFactory.GetHelpPanel().SetText();
+                                _currState = UserActionState.Default;
+                            }
                         }
                     }
                     else if (_currTmpCircArc != null)
@@ -279,7 +405,7 @@ public class GeometryManager : MonoBehaviour
                         }
                         else
                         {
-                            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+                            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
                         }
                     }
                 }
@@ -421,6 +547,7 @@ public class GeometryManager : MonoBehaviour
             ctlPtPanel.AttachCtlPt(editingCtlPt);
             SetPanelPos(ctlPtPanel.GetComponent<RectTransform>(), editingCtlPt.transform.position);
             _moveTrihedron = GeomObjectFactory.GetMoveTridehron(_currEditingCtlPt.transform.position);
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringEditDrag);
         }
         else if (editingTri != null)
         {
@@ -430,6 +557,7 @@ public class GeometryManager : MonoBehaviour
             }
 
             _dragCtlPtOldPos = _currEditingCtlPt.transform.position;
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringEditDrag);
             _currState = UserActionState.MoveCtlPtViaTrihedron;
         }
         else
@@ -437,6 +565,7 @@ public class GeometryManager : MonoBehaviour
             GeomObjectFactory.GetCtlPtEditPanel().Release();
             if (_moveTrihedron != null) { _moveTrihedron.ReleaseTrihedron(); }
             _currEditingCtlPt = null;
+            GeomObjectFactory.GetHelpPanel().SetText();
             _currState = UserActionState.SelectedCurve;
 
             foreach (Transform pt in _currSelectedCurve.CtlPts)
@@ -550,6 +679,7 @@ public class GeometryManager : MonoBehaviour
 
     private void HandleFinishMoveCtlPtViaTrihedron()
     {
+        GeomObjectFactory.GetHelpPanel().SetText();
         _currState = UserActionState.EditCurve;
     }
 
@@ -733,6 +863,7 @@ public class GeometryManager : MonoBehaviour
         else
         {
             _currState = UserActionState.SelectedCurve;
+            GeomObjectFactory.GetHelpPanel().SetText();
         }
     }
 
@@ -833,6 +964,7 @@ public class GeometryManager : MonoBehaviour
         }
         else
         {
+            GeomObjectFactory.GetHelpPanel().SetText();
             _currState = UserActionState.SelectedCurve;
         }
     }
@@ -855,8 +987,9 @@ public class GeometryManager : MonoBehaviour
         {
             _currTmpBzrCurve = GeomObjectFactory.CreateBezierCurve();
             _currCrvPtsLeft = 2;
-            _currCreatingObject = "2-point straight line";
-            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+            _creatingSmoothConnector = false;
+            _currCreatingObject = "2-point straight line.\r\nClick to add a point.";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
             _currState = UserActionState.CreateCurve;
         }
     }
@@ -867,8 +1000,9 @@ public class GeometryManager : MonoBehaviour
         {
             _currTmpBzrCurve = GeomObjectFactory.CreateBezierCurve();
             _currCrvPtsLeft = 3;
-            _currCreatingObject = "3-point curve";
-            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+            _creatingSmoothConnector = false;
+            _currCreatingObject = "3-point curve\r\nClick to add a point.";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
             _currState = UserActionState.CreateCurve;
         }
     }
@@ -879,8 +1013,9 @@ public class GeometryManager : MonoBehaviour
         {
             _currTmpBzrCurve = GeomObjectFactory.CreateBezierCurve();
             _currCrvPtsLeft = 4;
-            _currCreatingObject = "4-point curve";
-            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+            _creatingSmoothConnector = false;
+            _currCreatingObject = "4-point curve\r\nClick to add a point.";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
             _currState = UserActionState.CreateCurve;
         }
     }
@@ -891,8 +1026,21 @@ public class GeometryManager : MonoBehaviour
         {
             _currTmpCircArc = GeomObjectFactory.CreateCircularArc();
             _currCrvPtsLeft = 3;
-            _currCreatingObject = "Circular arc\nPoint order is: Start point, Center, End Point";
-            GeomObjectFactory.GetHelpPanel().SetText(HelpString);
+            _currCreatingObject = "Circular arc\n\r\nClick to add a point. Point order is: Start point, Center, End Point";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
+            _currState = UserActionState.CreateCurve;
+        }
+    }
+
+    public void StartSmoothConnect()
+    {
+        if (_currTmpBzrCurve == null && _currTmpCircArc == null)
+        {
+            _currTmpBzrCurve = GeomObjectFactory.CreateBezierCurve();
+            _currCrvPtsLeft = 2;
+            _creatingSmoothConnector = true;
+            _currCreatingObject = "Smooth connector.\r\nClick on a start/end point of two existing curves.";
+            GeomObjectFactory.GetHelpPanel().SetText(HelpStringCreateCurve);
             _currState = UserActionState.CreateCurve;
         }
     }
@@ -909,6 +1057,7 @@ public class GeometryManager : MonoBehaviour
             pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlEditing();
         }
 
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringStartEdit);
         _currState = UserActionState.EditCurve;
     }
 
@@ -924,6 +1073,7 @@ public class GeometryManager : MonoBehaviour
             pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
         }
 
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringMove);
         _currState = UserActionState.StartMoveCurve;
     }
 
@@ -939,6 +1089,7 @@ public class GeometryManager : MonoBehaviour
             pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
         }
 
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringRotate);
         _currState = UserActionState.StartRotateCurve;
     }
 
@@ -954,6 +1105,7 @@ public class GeometryManager : MonoBehaviour
             pt.GetComponent<MeshRenderer>().sharedMaterial = GeomObjectFactory.GetCtlPtMtlDefault();
         }
 
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringScaleCurve);
         _currState = UserActionState.StartScaleCurve;
     }
 
@@ -1031,6 +1183,8 @@ public class GeometryManager : MonoBehaviour
         {
             Debug.LogWarning("Tried to scale layer other than active layer");
         }
+
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringScaleLayer);
         _currState = UserActionState.StartScaleLayer;
     }
 
@@ -1164,6 +1318,7 @@ public class GeometryManager : MonoBehaviour
 
     public void StartGlobalScale(bool withElevation)
     {
+        GeomObjectFactory.GetHelpPanel().SetText(HelpStringScaleGlobal);
         _currState = UserActionState.StartGlobalScale;
         _globalScaleElevation = withElevation;
     }
@@ -1358,6 +1513,30 @@ public class GeometryManager : MonoBehaviour
         rt.gameObject.SetActive(!rt.gameObject.activeInHierarchy);
     }
 
+    private void CancelCreateCurve()
+    {
+        if (_currTmpBzrCurve != null)
+        {
+            Destroy(_currTmpBzrCurve.gameObject);
+            _currCrvPtsLeft = 0;
+            _currState = UserActionState.Default;
+            GeomObjectFactory.GetHelpPanel().SetText();
+        }
+        else if (_currTmpCircArc != null)
+        {
+            Destroy(_currTmpCircArc.gameObject);
+            _currCrvPtsLeft = 0;
+            _currState = UserActionState.Default;
+            GeomObjectFactory.GetHelpPanel().SetText();
+        }
+    }
+
+    private void CancelAll()
+    {
+        _currState = UserActionState.Default;
+        GeomObjectFactory.GetHelpPanel().SetText();
+    }
+
     void OnDrawGizmos()
     {
         foreach (var line in _lineGizmos)
@@ -1376,7 +1555,14 @@ public class GeometryManager : MonoBehaviour
     private List<(Vector3, Vector3, Color)> _lineGizmos = new List<(Vector3, Vector3, Color)>();
     private List<(Vector3, Color)> _pointGizmos = new List<(Vector3, Color)>();
 
-    private string HelpString => string.Format("Creating a {0}.\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);
+    private string HelpStringCreateCurve => string.Format("Creating a {0}.\r\n{1} points left.", _currCreatingObject, _currCrvPtsLeft);
+    private readonly string HelpStringStartEdit = "Click on a control point to start editing.";
+    private readonly string HelpStringEditDrag = "Edit curve\r\nDrag the selected control point, or drag one of the arrow gizmos to restrict movement to one of the axes.\r\nOr, click on another point to select it fot editing.";
+    private readonly string HelpStringMove = "Move curve\r\nDrag a vector to move the curve.";
+    private readonly string HelpStringRotate = "Rotate curve\r\nClick to select a rotation point, then drag to rotate the curve around that point.";
+    private readonly string HelpStringScaleCurve = "Scale curve\r\nClick to select a scaling point, then drag away from that point to scale up, or towards to scale down.";
+    private readonly string HelpStringScaleLayer = "Scale layer\r\nDrag a vector towards the center to scale down, or away from the center to scale up.";
+    private readonly string HelpStringScaleGlobal = "Global scale\r\nDrag a vector towards the center to scale down, or away from the center to scale up.";
 
     private UserActionState _currState = UserActionState.Default;
 
@@ -1386,6 +1572,8 @@ public class GeometryManager : MonoBehaviour
     private ControlPoint _currEditingCtlPt = null;
     private Trihedron _moveTrihedron = null;
     private int _currCrvPtsLeft = 0;
+    private bool _creatingSmoothConnector = false;
+    private ControlPoint _smoothConnectFirstEndpoint = null;
     private string _currCreatingObject = "";
     private UploadFileReceiver.DataReceiveHandle _receiveStructureDefHandle = null;
     private UploadFileReceiver.DataReceiveHandle _receiveTankBlueprintHandle = null;

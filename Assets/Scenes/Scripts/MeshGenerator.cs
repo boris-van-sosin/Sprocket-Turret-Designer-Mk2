@@ -1069,30 +1069,31 @@ public static class MeshGenerator
                 Vector3 trig1Norm = Vector3.Cross(trig1.Item2 - trig1.Item1, trig1.Item3 - trig1.Item1),
                         trig2Norm = Vector3.Cross(trig2.Item2 - trig2.Item1, trig2.Item3 - trig2.Item1);
                 //float trig1NormMagnitude = trig1Norm.magnitude, trig2NormMagnitude = trig2Norm.magnitude;
-                Vector3 quadN = (trig1Norm + trig2Norm).normalized;
+                Vector3 quadN = (trig1Norm + trig2Norm).normalized,
+                    quadNFlat = Vector3.ProjectOnPlane(quadN, Vector3.up);
 
-                if (Vector3.Dot(quadN, Vector3.up) > Mathf.Cos(15f * Mathf.Deg2Rad))
+                if (Vector3.Dot(quadN, Vector3.up) > Cos15)
                 {
                     expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item4;
                     expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item4;
                     expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item4;
                     expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item4;
                 }
-                else if (Vector3.Dot(quadN, -Vector3.up) > Mathf.Cos(15f * Mathf.Deg2Rad))
+                else if (Vector3.Dot(quadN, -Vector3.up) > Cos15)
                 {
                     expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item5;
                     expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item5;
                     expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item5;
                     expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item5;
                 }
-                else if (Vector3.Dot(quadN, Vector3.forward) > Mathf.Cos(45f * Mathf.Deg2Rad))
+                else if (Vector3.Dot(quadNFlat, Vector3.forward) > Cos45)
                 {
                     expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item1;
                     expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item1;
                     expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item1;
                     expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item1;
                 }
-                else if (Vector3.Dot(quadN, -Vector3.forward) > Mathf.Cos(45f * Mathf.Deg2Rad))
+                else if (Vector3.Dot(quadNFlat, -Vector3.forward) > Cos45)
                 {
                     expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item3;
                     expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item3;
@@ -1338,6 +1339,8 @@ public static class MeshGenerator
     private static readonly LayerComparer _comp = new LayerComparer();
     private static readonly FloatEpsComparer _floatEpsComp = new FloatEpsComparer(1e-5f);
     private static readonly float Sqrt2 = Mathf.Sqrt(2);
+    private static readonly float Cos15 = Mathf.Cos(15 * Mathf.Deg2Rad);
+    private static readonly float Cos45 = Mathf.Cos(45 * Mathf.Deg2Rad);
 }
 
 public class CurveAffineReparameterization<T> : ICurve<T>

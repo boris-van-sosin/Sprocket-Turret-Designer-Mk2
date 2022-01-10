@@ -1385,7 +1385,11 @@ public class GeometryManager : MonoBehaviour
 
     public void GenerateStructureAndDownload()
     {
+#if UNITY_EDITOR
+        if (true)
+#else
         if (_tankData != null)
+#endif
         {
             UISliderNum[] armourSliders = GeomObjectFactory.GetArmourValueSliders();
             int frontArmour = Mathf.RoundToInt(armourSliders[0].Value),
@@ -1393,7 +1397,8 @@ public class GeometryManager : MonoBehaviour
                 rearArmour = Mathf.RoundToInt(armourSliders[2].Value),
                 floorArmour = Mathf.RoundToInt(armourSliders[3].Value),
                 roofArmour = Mathf.RoundToInt(armourSliders[4].Value);
-            (MeshGenerator.QuadMesh, CompartmentExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, 5, true, frontArmour, sideArmour, rearArmour, floorArmour, roofArmour);
+            MeshGenerator.ThicknessMode armourMode = GeomObjectFactory.GetArmourModeToggle().SelectedOption == 0 ? MeshGenerator.ThicknessMode.BySection : MeshGenerator.ThicknessMode.ByAngle;
+            (MeshGenerator.QuadMesh, CompartmentExportData) meshData = MeshGenerator.GenerateQuadMesh(_layers, armourMode, 5, true, frontArmour, sideArmour, rearArmour, floorArmour, roofArmour);
             SetHexMeshPreview(meshData.Item1);
 
             StructureExportData exportData = new StructureExportData() { Turret = meshData.Item2, Hull = null };
@@ -1403,10 +1408,14 @@ public class GeometryManager : MonoBehaviour
             {
                 Vector3 dimensions = new Vector3(hullPreview.Item1[1].Value, hullPreview.Item1[2].Value, hullPreview.Item1[0].Value);
                 MeshGenerator.QuadMesh boxMesh = MeshGenerator.GenerateBox(dimensions);
-                exportData.Hull = MeshGenerator.AssignToExportData2(boxMesh, null);
+                exportData.Hull = MeshGenerator.AssignToExportData2(boxMesh, MeshGenerator.ThicknessMode.None, null, (10, 10, 10, 10, 10));
             }
 
+#if UNITY_EDITOR
+            Debug.Log(JsonUtility.ToJson(exportData));
+#else
             JavascripAdapter.SetTurretDataAndDownload(_tankData, JsonUtility.ToJson(exportData));
+#endif
         }
     }
 

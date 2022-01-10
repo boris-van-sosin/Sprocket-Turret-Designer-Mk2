@@ -7,10 +7,10 @@ public static class MeshGenerator
 {
     public static QuadMesh GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg)
     {
-        return GenerateQuadMesh(layers, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
+        return GenerateQuadMesh(layers, ThicknessMode.None, samplesPerCurvedSeg, false, 10, 10, 10, 10, 10).Item1;
     }
 
-    public static (QuadMesh, CompartmentExportData) GenerateQuadMesh(List<LayerPlane> layers, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
+    public static (QuadMesh, CompartmentExportData) GenerateQuadMesh(List<LayerPlane> layers, ThicknessMode thicknessMode, int samplesPerCurvedSeg, bool forExport, int frontThickness, int sideThickness, int rearThickness, int floorThickness, int roofThickness)
     {
         ProcessedCurves processed = ProcessAndSampleCurves(layers, samplesPerCurvedSeg, true);
 
@@ -23,7 +23,7 @@ public static class MeshGenerator
             FloorVertices = new List<int>(processed.FrontSamplePoints.Count),
             RoofVertices = new List<int>(processed.FrontSamplePoints.Count),
         };
-        List<int> thicknessMap = forExport ? new List<int>(quads.Vertices.Count) : null;
+        List<int> thicknessMap = (forExport && thicknessMode == ThicknessMode.BySection) ? new List<int>(quads.Vertices.Count) : null;
 
         int vertexIdx = 0, currlayerBase = 0, lastLayerBase = 0;
         for (int i = 0; i < processed.NumLayers; ++i)
@@ -197,7 +197,7 @@ public static class MeshGenerator
 
         GeomObjectFactory.GetGeometryManager().AssignGizmos(edges.Select(e => (quads.Vertices[e.Item1], quads.Vertices[e.Item2], UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))), quads.Vertices.Select(v => (v, UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 1f, 1f))));
 
-        CompartmentExportData exportData = forExport ? AssignToExportData2(quads, thicknessMap) : null;
+        CompartmentExportData exportData = forExport ? AssignToExportData2(quads, thicknessMode, thicknessMap, (frontThickness, sideThickness, rearThickness, roofThickness, floorThickness)) : null;
         return (quads, exportData);
     }
 
@@ -1041,7 +1041,7 @@ public static class MeshGenerator
         return exportData;
     }
 
-    public static CompartmentExportData AssignToExportData2(QuadMesh quads, List<int> thicknessMap)
+    public static CompartmentExportData AssignToExportData2(QuadMesh quads, ThicknessMode thicknessMode, List<int> thicknessMap, (int, int, int,int, int) byAngleTHicknessMap)
     {
         List<Vector3> vertices = new List<Vector3>(quads.Quads.Count * 4);
         IntArrayContainer[] faces = new IntArrayContainer[quads.Quads.Count];
@@ -1055,12 +1055,58 @@ public static class MeshGenerator
             vertices.Add(quads.Vertices[quads.Quads[i].Item3]);
             vertices.Add(quads.Vertices[quads.Quads[i].Item4]);
 
-            if (thicknessMap != null)
+            if (thicknessMode == ThicknessMode.BySection && thicknessMap != null)
             {
                 expandedThicknessMap[vertexIdx + 0] = thicknessMap[quads.Quads[i].Item1];
                 expandedThicknessMap[vertexIdx + 1] = thicknessMap[quads.Quads[i].Item2];
                 expandedThicknessMap[vertexIdx + 2] = thicknessMap[quads.Quads[i].Item3];
                 expandedThicknessMap[vertexIdx + 3] = thicknessMap[quads.Quads[i].Item4];
+            }
+            else if (thicknessMode == ThicknessMode.ByAngle)
+            {
+                (Vector3, Vector3, Vector3) trig1 = (quads.Vertices[quads.Quads[i].Item1], quads.Vertices[quads.Quads[i].Item2], quads.Vertices[quads.Quads[i].Item3]);
+                (Vector3, Vector3, Vector3) trig2 = (quads.Vertices[quads.Quads[i].Item1], quads.Vertices[quads.Quads[i].Item3], quads.Vertices[quads.Quads[i].Item4]);
+                Vector3 trig1Norm = Vector3.Cross(trig1.Item2 - trig1.Item1, trig1.Item3 - trig1.Item1),
+                        trig2Norm = Vector3.Cross(trig2.Item2 - trig2.Item1, trig2.Item3 - trig2.Item1);
+                //float trig1NormMagnitude = trig1Norm.magnitude, trig2NormMagnitude = trig2Norm.magnitude;
+                Vector3 quadN = (trig1Norm + trig2Norm).normalized;
+
+                if (Vector3.Dot(quadN, Vector3.up) > Mathf.Cos(15f * Mathf.Deg2Rad))
+                {
+                    expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item4;
+                    expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item4;
+                    expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item4;
+                    expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item4;
+                }
+                else if (Vector3.Dot(quadN, -Vector3.up) > Mathf.Cos(15f * Mathf.Deg2Rad))
+                {
+                    expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item5;
+                    expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item5;
+                    expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item5;
+                    expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item5;
+                }
+                else if (Vector3.Dot(quadN, Vector3.forward) > Mathf.Cos(45f * Mathf.Deg2Rad))
+                {
+                    expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item1;
+                    expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item1;
+                    expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item1;
+                    expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item1;
+                }
+                else if (Vector3.Dot(quadN, -Vector3.forward) > Mathf.Cos(45f * Mathf.Deg2Rad))
+                {
+                    expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item3;
+                    expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item3;
+                    expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item3;
+                    expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item3;
+                }
+                else
+                {
+                    expandedThicknessMap[vertexIdx + 0] = byAngleTHicknessMap.Item2;
+                    expandedThicknessMap[vertexIdx + 1] = byAngleTHicknessMap.Item2;
+                    expandedThicknessMap[vertexIdx + 2] = byAngleTHicknessMap.Item2;
+                    expandedThicknessMap[vertexIdx + 3] = byAngleTHicknessMap.Item2;
+                }
+
             }
             else
             {
@@ -1233,6 +1279,13 @@ public static class MeshGenerator
     private enum Section
     {
         Front, Side, Rear
+    }
+
+    public enum ThicknessMode
+    {
+        None,
+        BySection,
+        ByAngle
     }
 
     private struct ProcessedCurves

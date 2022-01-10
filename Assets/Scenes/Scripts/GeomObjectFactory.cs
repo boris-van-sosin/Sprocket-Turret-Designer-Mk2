@@ -134,6 +134,11 @@ public static class GeomObjectFactory
         return _prototypes.GetInstructionsPanel();
     }
 
+    public static UIRadioGroup GetArmourModeToggle()
+    {
+        return _prototypes.GetArmourModeToggle();
+    }
+
     public static Material GetCurveMtlDefault()
     {
         return _prototypes.GetCurveMtlDefault();

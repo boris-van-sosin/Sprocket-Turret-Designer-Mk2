@@ -268,7 +268,7 @@ public class LayerPlane : MonoBehaviour
         {
             for (int i = 0; i < crv.CtlPts.Count; ++i)
             {
-                crv.CtlPts[i].position = _backupControlPoints[crv][i] * factor;
+                crv.CtlPts[i].position = new Vector3(_backupControlPoints[crv][i].x * factor, Elevation, _backupControlPoints[crv][i].z * factor);
                 crv.UpdateControlPoint(crv.CtlPts[i].GetComponent<ControlPoint>());
             }
             crv.TryRender();

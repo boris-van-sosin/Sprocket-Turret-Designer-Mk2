@@ -30,6 +30,7 @@ public class ObjectPrototypes : MonoBehaviour
     public UnityEngine.UI.Image UploadedDesignImage;
     public RectTransform MenuPanel;
     public RectTransform InstructionsPanel;
+    public UIRadioGroup ArmourModeToggle;
     public Material CurveMtlDefault;
     public Material CurveMtlSelected;
     public Material CtlPtMtlDefault;
@@ -162,6 +163,10 @@ public class ObjectPrototypes : MonoBehaviour
         return InstructionsPanel;
     }
 
+    public UIRadioGroup GetArmourModeToggle()
+    {
+        return ArmourModeToggle;
+    }
     public Material GetCurveMtlDefault()
     {
         return CurveMtlDefault;

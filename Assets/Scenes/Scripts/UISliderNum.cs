@@ -10,7 +10,7 @@ public class UISliderNum : MonoBehaviour
     void Start()
     {
         SliderObj.onValueChanged.AddListener(new UnityEngine.Events.UnityAction<float>(OnSliderChange));
-        InputObj.onValueChanged.AddListener(new UnityEngine.Events.UnityAction<string>(OnTextChange));
+        InputObj.onEndEdit.AddListener(new UnityEngine.Events.UnityAction<string>(OnTextChange));
         Value = SliderObj.value;
     }
 

@@ -5296,7 +5296,7 @@ MonoBehaviour:
     of segments), you can generate a preview of it. If you have already uploaded
     the tank blueprint, you can apply the turret\r\nto the tank, and download the
     modified design using the \"Generate & Download\" button.\r\n\r\nSaving and loading:\r\nThe
-    \"Donwload deinition\" button downloads a data file of your turret design to
+    \"Download definition\" button downloads a data file of your turret design to
     save your work for back up or for continuing to work on it later. You can also
     upload a previously saved turret design. Note that this is NOT in the Sprocket
     format, so\r\n do not try to copy these data files into Sprocket.\r\n\r\nHint
@@ -5306,7 +5306,7 @@ MonoBehaviour:
     from Sprocket to to which the turret will be applied. The tank must already have
     a turret called \"Turret 1\", and the app will override it.\r\n\r\nHull preview:\r\nTo
     get a sense of the size of the turret, the app can display a box-shaped dummy
-    tank hull under the turret. You can set the dimenstions of the preview hull.\r\nAlso,
+    tank hull under the turret. You can set the dimensions of the preview hull.\r\nAlso,
     you can choose to override the tank hull in the blueprint with the preview hull
     when you download the modified blueprint."
   m_isRightToLeft: 0
@@ -10520,8 +10520,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 706207286}
   m_HandleRect: {fileID: 706207285}
   m_Direction: 2
-  m_Value: 0.9999977
-  m_Size: 0.6178947
+  m_Value: 0.99999833
+  m_Size: 0.4631579
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

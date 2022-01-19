@@ -1466,7 +1466,14 @@ public class GeometryManager : MonoBehaviour
                 }
                 else if (def.Layers[i].Curves[j].CurveType == SerializationUtils.CircuarArcString)
                 {
-
+                    CircularArcGeom circ = GeomObjectFactory.CreateCircularArc();
+                    foreach (Vector3 pt in def.Layers[i].Curves[j].Points)
+                    {
+                        ControlPoint ctlPt = GeomObjectFactory.CreateCtlPt(pt).GetComponent<ControlPoint>();
+                        circ.AppendCtlPt(ctlPt);
+                    }
+                    circ.TryRender();
+                    layer.AddCurve(circ);
                 }
             }
         }

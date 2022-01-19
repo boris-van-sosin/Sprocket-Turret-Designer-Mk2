@@ -1070,7 +1070,7 @@ public static class MeshGenerator
                         trig2Norm = Vector3.Cross(trig2.Item2 - trig2.Item1, trig2.Item3 - trig2.Item1);
                 //float trig1NormMagnitude = trig1Norm.magnitude, trig2NormMagnitude = trig2Norm.magnitude;
                 Vector3 quadN = (trig1Norm + trig2Norm).normalized,
-                    quadNFlat = Vector3.ProjectOnPlane(quadN, Vector3.up);
+                    quadNFlat = Vector3.ProjectOnPlane(quadN, Vector3.up).normalized;
 
                 if (Vector3.Dot(quadN, Vector3.up) > Cos15)
                 {
